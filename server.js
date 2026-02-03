@@ -29,15 +29,26 @@ app.get('/screenshot', async (req, res) => {
 
     const browser = await getBrowser();
     const page = await browser.newPage();
+
+    // Disable caching to ensure fresh content
+    await page.setCacheEnabled(false);
+
     await page.setViewport({ width, height });
     await page.goto(`http://localhost:${PORT}/`, {
       waitUntil: 'networkidle0'
     });
 
+    // Wait a bit for iframe content to fully load
+    await page.waitForTimeout(1000);
+
     const screenshot = await page.screenshot({ type: 'png' });
     await page.close();
 
+    // Prevent browser caching of the screenshot
     res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
     res.send(screenshot);
   } catch (error) {
     console.error(error);
