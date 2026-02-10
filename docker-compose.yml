@@ -9,6 +9,6 @@ services:
       - ./server.js:/app/server.js
     environment:
       - PORT=3000
-      - WIDTH=480
-      - HEIGHT=800
+      - WIDTH=800
+      - HEIGHT=480
       - TZ=Europe/Helsinki

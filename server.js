@@ -9,6 +9,11 @@ const HEIGHT = parseInt(process.env.HEIGHT) || 480;
 
 app.use(express.static('public'));
 
+// Grid layout route
+app.get('/grid', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'grid.html'));
+});
+
 let browser;
 
 async function getBrowser() {
@@ -58,6 +63,7 @@ app.get('/screenshot', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Dashboard: http://localhost:${PORT}/`);
+  console.log(`Dashboard (Portrait): http://localhost:${PORT}/`);
+  console.log(`Grid Layout (Landscape): http://localhost:${PORT}/grid`);
   console.log(`Screenshot: http://localhost:${PORT}/screenshot`);
 });

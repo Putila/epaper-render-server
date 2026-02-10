@@ -1,0 +1,200 @@
+/* Grid Layout for 800x480 (Landscape) */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background-color: #1c57cf;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: 400px 400px;
+  grid-template-rows: 240px 240px;
+  width: 800px;
+  height: 480px;
+  gap: 0;
+}
+
+/* Top-left: Transit iframe */
+.grid-top-left {
+  grid-row: 1;
+  grid-column: 1;
+  overflow: hidden;
+  position: relative;
+  background: #ffffff;
+}
+
+.grid-top-left iframe {
+  width: 100%;
+  height: calc(100% / 0.7);
+  border: none;
+}
+
+/* Bottom-left: Weather + Spanish word */
+.grid-bottom-left {
+  grid-row: 2;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  background: #1c57cf;
+  color: #ffffff;
+  gap: 12px;
+}
+
+/* Weather Widget */
+.weather-widget {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.weather-location {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.weather-temp {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.weather-desc {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Spanish Word Widget */
+.spanish-widget {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.spanish-label {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-bottom: 4px;
+}
+
+.spanish-word {
+  font-size: 1.8rem;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.spanish-translation {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.spanish-example {
+  font-size: 0.85rem;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Right side: Gym schedule */
+.grid-right {
+  grid-row: 1 / 3;
+  grid-column: 2;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #1c57cf;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.grid-right .day-label {
+  font-size: 1rem;
+  color: #ffffff;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.gym-schedule-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  align-items: center;
+}
+
+/* Gym cards in vertical layout */
+.gym-schedule-vertical .gym-card {
+  width: 320px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.gym-schedule-vertical .gym-card h2 {
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gym-schedule-vertical .gym-card.card-city h2 {
+  background: #FF4238;
+}
+
+.gym-schedule-vertical .gym-card.card-park h2 {
+  background: #002D72;
+}
+
+.gym-schedule-vertical .gym-card.card-hervanta h2 {
+  background: #C8BBAF;
+}
+
+/* Scale gym schedules to fit */
+.gym-schedule-vertical .gym-schedule {
+  transform: scale(1.05);
+  transform-origin: top left;
+  width: 300px;
+}
+
+/* Scrollbar styling */
+.grid-right::-webkit-scrollbar {
+  width: 6px;
+}
+
+.grid-right::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.grid-right::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.grid-right::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

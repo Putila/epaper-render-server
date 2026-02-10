@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grid Dashboard</title>
+  <link rel="stylesheet" href="grid.css">
+  <link rel="stylesheet" href="gym-schedule.css">
+</head>
+<body>
+  <div class="grid-container">
+    <!-- Top-left: Transit iframe -->
+    <div class="grid-top-left">
+      <iframe src="https://tremonitori.digitransit.fi/view?cont=a2lbjToAAyFkh5sdOSAeIA=="></iframe>
+    </div>
+
+    <!-- Bottom-left: Weather + Spanish word -->
+    <div class="grid-bottom-left">
+      <div class="weather-widget">
+        <div class="weather-location">Tampere</div>
+        <div class="weather-temp">--°C</div>
+        <div class="weather-desc">Loading...</div>
+      </div>
+
+      <div class="spanish-widget">
+        <div class="spanish-label">Palabra del día</div>
+        <div class="spanish-word">---</div>
+        <div class="spanish-translation">---</div>
+        <div class="spanish-example">---</div>
+      </div>
+    </div>
+
+    <!-- Right: Gym schedule -->
+    <div class="grid-right">
+      <div class="day-label" id="dayLabel"></div>
+
+      <div class="gym-schedule-vertical">
+        <div class="gym-card card-city">
+          <h2>City</h2>
+          <div class="gym-schedule gym-city" id="sched-city"></div>
+        </div>
+
+        <div class="gym-card card-park">
+          <h2>Park</h2>
+          <div class="gym-schedule gym-park" id="sched-park"></div>
+        </div>
+
+        <div class="gym-card card-hervanta">
+          <h2>Hervanta</h2>
+          <div class="gym-schedule gym-hervanta" id="sched-hervanta"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="gym-schedule.js"></script>
+  <script src="weather.js"></script>
+  <script src="spanish-word.js"></script>
+</body>
+</html>
