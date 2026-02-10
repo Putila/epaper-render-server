@@ -127,58 +127,18 @@ html, body {
 }
 
 .grid-right .day-label {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #ffffff;
-  margin-bottom: 12px;
-  font-weight: 600;
+  margin-bottom: 8px;
 }
 
-.gym-schedule-vertical {
+/* Reuse schedule-container from styles.css but with vertical layout */
+.grid-right .schedule-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
   align-items: center;
-}
-
-/* Gym cards in vertical layout */
-.gym-schedule-vertical .gym-card {
-  width: 320px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  overflow: hidden;
-}
-
-.gym-schedule-vertical .gym-card h2 {
-  margin: 0;
-  padding: 8px 12px;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #fff;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.gym-schedule-vertical .gym-card.card-city h2 {
-  background: #FF4238;
-}
-
-.gym-schedule-vertical .gym-card.card-park h2 {
-  background: #002D72;
-}
-
-.gym-schedule-vertical .gym-card.card-hervanta h2 {
-  background: #C8BBAF;
-}
-
-/* Scale gym schedules to fit */
-.gym-schedule-vertical .gym-schedule {
-  transform: scale(1.05);
-  transform-origin: top left;
-  width: 300px;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 /* Scrollbar styling */
