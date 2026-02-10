@@ -4,7 +4,11 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
+    volumes:
+      - ./public:/app/public
+      - ./server.js:/app/server.js
     environment:
       - PORT=3000
-      - WIDTH=800
-      - HEIGHT=480
+      - WIDTH=480
+      - HEIGHT=800
+      - TZ=Europe/Helsinki

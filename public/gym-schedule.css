@@ -1,0 +1,112 @@
+/* ===== Gym Schedule Sprites ===== */
+/* Source: 1655×2340px | Column width: 300px */
+/* Border trim: 0.3% per side */
+
+.gym-schedule {
+  width: 300px;
+  background-image: url('schedule.png'); /* ← your image path */
+  background-repeat: no-repeat;
+  background-size: 2645px 3740px;
+  display: inline-block;
+}
+
+/* — Day columns — */
+.day-mon { background-position-x: -436px; }
+.day-tue { background-position-x: -752px; }
+.day-wed { background-position-x: -1068px; }
+.day-thu { background-position-x: -1384px; }
+.day-fri { background-position-x: -1700px; }
+.day-sat { background-position-x: -2016px; }
+.day-sun { background-position-x: -2332px; }
+
+/* — Gym rows (default) — */
+.gym-city {
+  height: 897px;
+  background-position-y: -50px;
+}
+.gym-park {
+  height: 1339px;
+  background-position-y: -1060px;
+}
+.gym-hervanta {
+  height: 1066px;
+  background-position-y: -2623px;
+}
+
+/* — Per-day height overrides — */
+.gym-city.day-mon {
+  height: 785px;
+  background-position-y: -50px;
+}
+.gym-city.day-tue {
+  height: 894px;
+  background-position-y: -50px;
+}
+.gym-city.day-wed {
+  height: 785px;
+  background-position-y: -50px;
+}
+.gym-city.day-thu {
+  height: 785px;
+  background-position-y: -50px;
+}
+.gym-city.day-fri {
+  height: 471px;
+  background-position-y: -50px;
+}
+.gym-city.day-sat {
+  height: 385px;
+  background-position-y: -50px;
+}
+.gym-city.day-sun {
+  height: 456px;
+  background-position-y: -50px;
+}
+.gym-park.day-mon {
+  height: 1342px;
+  background-position-y: -1060px;
+}
+.gym-park.day-tue {
+  height: 1230px;
+  background-position-y: -1060px;
+}
+.gym-park.day-wed {
+  height: 1133px;
+  background-position-y: -1060px;
+}
+.gym-park.day-thu {
+  height: 1342px;
+  background-position-y: -1060px;
+}
+.gym-park.day-fri {
+  height: 1017px;
+  background-position-y: -1060px;
+}
+.gym-park.day-sat {
+  height: 692px;
+  background-position-y: -1060px;
+}
+.gym-park.day-sun {
+  height: 692px;
+  background-position-y: -1060px;
+}
+.gym-hervanta.day-wed {
+  height: 591px;
+  background-position-y: -2623px;
+}
+.gym-hervanta.day-thu {
+  height: 714px;
+  background-position-y: -2623px;
+}
+.gym-hervanta.day-fri {
+  height: 714px;
+  background-position-y: -2623px;
+}
+.gym-hervanta.day-sat {
+  height: 819px;
+  background-position-y: -2623px;
+}
+.gym-hervanta.day-sun {
+  height: 486px;
+  background-position-y: -2623px;
+}

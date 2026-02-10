@@ -1,22 +1,38 @@
 <!DOCTYPE html>
-<html>
+<html lang="fi">
 <head>
   <meta charset="UTF-8">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
-    iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="gym-schedule.css">
 </head>
 <body>
-  <iframe src="https://tremonitori.digitransit.fi/view?cont=uh1bl5lmvpjmp6ouOn6aMQ=="></iframe>
+  <div class="iframe-container">
+    <iframe src="https://tremonitori.digitransit.fi/view?cont=a2lbjToAAyFkh5sdOSAeIA=="></iframe>
+  </div>
+
+  <div class="gym-container">
+    <div class="day-label" id="dayLabel"></div>
+
+    <div class="schedule-container">
+      <div class="gym-card card-city">
+        <h2>City</h2>
+        <div class="gym-schedule gym-city" id="sched-city"></div>
+      </div>
+
+      <div class="gym-card card-park">
+        <h2>Park</h2>
+        <div class="gym-schedule gym-park" id="sched-park"></div>
+      </div>
+
+      <div class="gym-card card-hervanta">
+        <h2>Hervanta</h2>
+        <div class="gym-schedule gym-hervanta" id="sched-hervanta"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="gym-schedule.js"></script>
 </body>
 </html>

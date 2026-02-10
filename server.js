@@ -39,7 +39,7 @@ app.get('/screenshot', async (req, res) => {
     });
 
     // Wait a bit for iframe content to fully load
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(10000);
 
     const screenshot = await page.screenshot({ type: 'png' });
     await page.close();

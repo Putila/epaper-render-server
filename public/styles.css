@@ -1,0 +1,94 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background-color: #1c57cf;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.iframe-container {
+  width: 100%;
+  height: 35%;
+  overflow: hidden;
+  position: relative;
+}
+
+.iframe-container iframe {
+  width: 100%;
+  height: calc(100% / 0.7);
+  border: none;
+}
+
+.gym-container {
+  width: 100%;
+  height: 65%;
+  overflow-y: auto;
+  background: #1c57cf;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+}
+
+h1 {
+  margin-bottom: 2px;
+  color: #222;
+  font-size: 1.2rem;
+}
+
+.day-label {
+  font-size: 0.9rem;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.schedule-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.gym-card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.gym-card .gym-schedule {
+  transform: scale(0.5);
+  transform-origin: top left;
+  width: 300px;
+}
+
+.gym-card h2 {
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gym-card.card-city h2    { background: #FF4238; }
+.gym-card.card-park h2    { background: #002D72; }
+.gym-card.card-hervanta h2 { background: #C8BBAF; }
+
+.day-picker {
+  display: none;
+}
