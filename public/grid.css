@@ -16,7 +16,7 @@ html, body {
 
 .grid-container {
   display: grid;
-  grid-template-columns: 400px 400px;
+  grid-template-columns: 300px 500px;
   grid-template-rows: 240px 240px;
   width: 800px;
   height: 480px;
@@ -44,10 +44,10 @@ html, body {
   grid-column: 1;
   display: flex;
   flex-direction: column;
-  padding: 12px;
+  padding: 4px;
   background: #1c57cf;
   color: #ffffff;
-  gap: 12px;
+  gap: 4px;
 }
 
 /* Weather Widget */
@@ -56,25 +56,25 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 8px;
+  padding: 4px 6px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .weather-location {
-  font-size: 1rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .weather-temp {
-  font-size: 2.5rem;
+  font-size: 1.3rem;
   font-weight: bold;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .weather-desc {
-  font-size: 0.9rem;
+  font-size: 0.7rem;
   opacity: 0.9;
 }
 
@@ -84,33 +84,34 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 8px;
+  padding: 4px 6px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .spanish-label {
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   opacity: 0.8;
-  margin-bottom: 4px;
+  margin-bottom: 1px;
 }
 
 .spanish-word {
-  font-size: 1.8rem;
+  font-size: 1rem;
   font-weight: bold;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
 }
 
 .spanish-translation {
-  font-size: 1rem;
+  font-size: 0.75rem;
   opacity: 0.9;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .spanish-example {
-  font-size: 0.85rem;
+  font-size: 0.65rem;
   font-style: italic;
   opacity: 0.8;
+  line-height: 1.2;
 }
 
 /* Right side: Gym schedule */
@@ -120,7 +121,7 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   background: #1c57cf;
-  padding: 8px;
+  padding: 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -135,9 +136,9 @@ html, body {
 /* Reuse schedule-container from styles.css but with vertical layout */
 .grid-right .schedule-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
+  flex-direction: row;
+  align-items: top;
+  gap: 2px;
   flex-wrap: nowrap;
 }
 
