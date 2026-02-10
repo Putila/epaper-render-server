@@ -29,8 +29,9 @@ async function getBrowser() {
 
 app.get('/screenshot', async (req, res) => {
   try {
-    const width = parseInt(req.query.width) || WIDTH;
-    const height = parseInt(req.query.height) || HEIGHT;
+    // Default to portrait dimensions (480x800) for the default route
+    const width = parseInt(req.query.width) || 480;
+    const height = parseInt(req.query.height) || 800;
 
     const browser = await getBrowser();
     const page = await browser.newPage();
