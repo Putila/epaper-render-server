@@ -78,8 +78,8 @@ app.get('/screenshot/grid', async (req, res) => {
       waitUntil: 'networkidle0'
     });
 
-    // Wait a bit for iframe and weather content to fully load
-    await page.waitForTimeout(10000);
+    // Wait for iframe and weather content to fully load
+    await page.waitForTimeout(15000);
 
     const screenshot = await page.screenshot({ type: 'png' });
     await page.close();
