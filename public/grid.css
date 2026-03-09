@@ -16,7 +16,7 @@ html, body {
 
 .grid-container {
   display: grid;
-  grid-template-columns: 300px 500px;
+  grid-template-columns: 350px 450px;
   grid-template-rows: 240px 240px;
   width: 800px;
   height: 480px;
@@ -127,6 +127,12 @@ html, body {
   line-height: 1.1;
 }
 
+/* CJK word-main: normal weight for better glyph rendering */
+.lang-widget .korean-word,
+.lang-widget .japanese-word {
+  font-weight: normal;
+}
+
 /* Right side: Gym schedule */
 .grid-right {
   grid-row: 1 / 3;
@@ -135,7 +141,7 @@ html, body {
   overflow-x: hidden;
   scrollbar-width: none;
   background: #1c57cf;
-  padding: 2px 2px 2px 16px;
+  padding: 2px 2px 2px 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
