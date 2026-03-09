@@ -1,9 +1,8 @@
-// Weather widget using wttr.in
-// Fetches weather data for Tampere, Finland
+// Weather widget - fetches from local server proxy for fast loading
 
 async function fetchWeather() {
   try {
-    const response = await fetch('https://wttr.in/Tampere?format=j1');
+    const response = await fetch('/api/weather');
 
     if (!response.ok) {
       throw new Error('Weather fetch failed');
@@ -11,27 +10,20 @@ async function fetchWeather() {
 
     const data = await response.json();
 
-    // Extract current conditions
-    const current = data.current_condition[0];
-    const temp = current.temp_C;
-    const desc = current.weatherDesc[0].value;
-
-    // Update DOM elements
     const tempElement = document.querySelector('.weather-temp');
     const descElement = document.querySelector('.weather-desc');
 
     if (tempElement) {
-      tempElement.textContent = `${temp}°C`;
+      tempElement.textContent = `${data.temp}°C`;
     }
 
     if (descElement) {
-      descElement.textContent = desc;
+      descElement.textContent = `${data.description}, ${data.windspeed} km/h`;
     }
 
   } catch (error) {
     console.error('Failed to fetch weather:', error);
 
-    // Fallback display
     const tempElement = document.querySelector('.weather-temp');
     const descElement = document.querySelector('.weather-desc');
 
@@ -48,5 +40,5 @@ async function fetchWeather() {
 // Fetch weather on page load
 fetchWeather();
 
-// Optional: Refresh weather every 30 minutes
+// Refresh weather every 30 minutes
 setInterval(fetchWeather, 30 * 60 * 1000);

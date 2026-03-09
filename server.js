@@ -16,6 +16,64 @@ const GRID_DELAY = parseInt(process.env.GRID_DELAY) || 15000;
 
 app.use(express.static('public'));
 
+// Weather proxy with caching - fetches from Open-Meteo and caches for 15 minutes.
+// Client-side JS fetches from /api/weather instead of the external API,
+// so weather data loads instantly during screenshots.
+const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=61.5&longitude=23.8&current_weather=true';
+let weatherCache = { data: null, timestamp: 0 };
+const WEATHER_CACHE_MS = 15 * 60 * 1000;
+
+// WMO weather codes to descriptions
+const WMO_CODES = {
+  0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
+  45: 'Fog', 48: 'Rime fog',
+  51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
+  61: 'Slight rain', 63: 'Rain', 65: 'Heavy rain',
+  66: 'Freezing rain', 67: 'Heavy freezing rain',
+  71: 'Slight snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains',
+  80: 'Slight showers', 81: 'Showers', 82: 'Heavy showers',
+  85: 'Slight snow showers', 86: 'Heavy snow showers',
+  95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Thunderstorm with heavy hail'
+};
+
+async function fetchWeatherData() {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    const response = await fetch(WEATHER_URL, { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const raw = await response.json();
+    const cw = raw.current_weather;
+    const data = {
+      temp: Math.round(cw.temperature),
+      description: WMO_CODES[cw.weathercode] || 'Unknown',
+      windspeed: Math.round(cw.windspeed),
+      is_day: cw.is_day
+    };
+    weatherCache = { data, timestamp: Date.now() };
+    console.log(`Weather updated: ${data.temp}°C, ${data.description}`);
+    return data;
+  } catch (error) {
+    console.error('Weather fetch failed:', error.message);
+    return weatherCache.data;
+  }
+}
+
+app.get('/api/weather', async (req, res) => {
+  if (!weatherCache.data || Date.now() - weatherCache.timestamp > WEATHER_CACHE_MS) {
+    await fetchWeatherData();
+  }
+  if (weatherCache.data) {
+    res.json(weatherCache.data);
+  } else {
+    res.status(503).json({ error: 'Weather data unavailable' });
+  }
+});
+
+// Pre-fetch weather on startup so it's ready for the first screenshot
+fetchWeatherData();
+
 // Grid layout route
 app.get('/grid', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'grid.html'));
