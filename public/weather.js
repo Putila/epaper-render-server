@@ -21,6 +21,7 @@ async function fetchWeather() {
 
     const tempElement = document.querySelector('.weather-temp');
     const descElement = document.querySelector('.weather-desc');
+    const forecastElement = document.getElementById('weatherForecast');
 
     if (tempElement) {
       tempElement.textContent = `${data.temp}°C`;
@@ -28,6 +29,12 @@ async function fetchWeather() {
 
     if (descElement) {
       descElement.textContent = `${data.description}, ${data.windspeed} km/h`;
+    }
+
+    if (forecastElement && data.hourly && data.hourly.length > 0) {
+      forecastElement.textContent = data.hourly
+        .map(h => `${String(h.hour).padStart(2, '0')}:${h.temp}°`)
+        .join('  ');
     }
 
   } catch (error) {

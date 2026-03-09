@@ -19,21 +19,21 @@ app.use(express.static('public'));
 // Weather proxy with caching - fetches from Open-Meteo and caches for 15 minutes.
 // Client-side JS fetches from /api/weather instead of the external API,
 // so weather data loads instantly during screenshots.
-const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=61.5&longitude=23.8&current_weather=true';
+const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=61.5&longitude=23.8&current_weather=true&hourly=temperature_2m&forecast_days=1&timezone=Europe%2FHelsinki';
 let weatherCache = { data: null, timestamp: 0 };
 const WEATHER_CACHE_MS = 15 * 60 * 1000;
 
-// WMO weather codes to descriptions
+// WMO weather codes to Finnish descriptions
 const WMO_CODES = {
-  0: 'Clear sky', 1: 'Mainly clear', 2: 'Partly cloudy', 3: 'Overcast',
-  45: 'Fog', 48: 'Rime fog',
-  51: 'Light drizzle', 53: 'Drizzle', 55: 'Dense drizzle',
-  61: 'Slight rain', 63: 'Rain', 65: 'Heavy rain',
-  66: 'Freezing rain', 67: 'Heavy freezing rain',
-  71: 'Slight snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains',
-  80: 'Slight showers', 81: 'Showers', 82: 'Heavy showers',
-  85: 'Slight snow showers', 86: 'Heavy snow showers',
-  95: 'Thunderstorm', 96: 'Thunderstorm with hail', 99: 'Thunderstorm with heavy hail'
+  0: 'Selkeää', 1: 'Enimmäkseen selkeää', 2: 'Puolipilvistä', 3: 'Pilvistä',
+  45: 'Sumua', 48: 'Huurresumua',
+  51: 'Kevyttä tihkua', 53: 'Tihkusadetta', 55: 'Tiheää tihkua',
+  61: 'Heikkoa sadetta', 63: 'Sadetta', 65: 'Rankkasadetta',
+  66: 'Jäätävää sadetta', 67: 'Voimakasta jäätävää sadetta',
+  71: 'Heikkoa lumisadetta', 73: 'Lumisadetta', 75: 'Voimakasta lumisadetta', 77: 'Lumijyväsiä',
+  80: 'Heikkoja kuuroja', 81: 'Kuuroja', 82: 'Voimakkaita kuuroja',
+  85: 'Heikkoja lumikuuroja', 86: 'Voimakkaita lumikuuroja',
+  95: 'Ukkosmyrsky', 96: 'Ukkosmyrsky ja rakeita', 99: 'Voimakas ukkosmyrsky ja rakeita'
 };
 
 async function fetchWeatherData() {
@@ -45,11 +45,25 @@ async function fetchWeatherData() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const raw = await response.json();
     const cw = raw.current_weather;
+
+    // Extract 3-hourly temperatures for today (06, 09, 12, 15, 18, 21)
+    const hourly = [];
+    if (raw.hourly && raw.hourly.time && raw.hourly.temperature_2m) {
+      const targetHours = [6, 9, 12, 15, 18, 21];
+      for (let i = 0; i < raw.hourly.time.length; i++) {
+        const hour = new Date(raw.hourly.time[i]).getHours();
+        if (targetHours.includes(hour)) {
+          hourly.push({ hour, temp: Math.round(raw.hourly.temperature_2m[i]) });
+        }
+      }
+    }
+
     const data = {
       temp: Math.round(cw.temperature),
-      description: WMO_CODES[cw.weathercode] || 'Unknown',
+      description: WMO_CODES[cw.weathercode] || 'Tuntematon',
       windspeed: Math.round(cw.windspeed),
-      is_day: cw.is_day
+      is_day: cw.is_day,
+      hourly
     };
     weatherCache = { data, timestamp: Date.now() };
     console.log(`Weather updated: ${data.temp}°C, ${data.description}`);

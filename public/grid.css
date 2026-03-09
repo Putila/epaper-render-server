@@ -87,6 +87,14 @@ html, body {
   opacity: 0.9;
 }
 
+.weather-forecast {
+  font-size: 0.65rem;
+  opacity: 0.75;
+  letter-spacing: 0.3px;
+  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Language Widgets (shared styles for Spanish, Korean, Japanese) */
 .lang-widget {
   flex: 1;
