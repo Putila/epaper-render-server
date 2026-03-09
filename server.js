@@ -286,6 +286,7 @@ function takeScreenshot(url, width, height, timeoutMs) {
     const args = [
       '--headless',
       '--no-remote',
+      '--profile', path.join(__dirname, 'firefox-profile'),
       `--window-size=${width},${height}`,
       '--screenshot', tmpFile,
       url

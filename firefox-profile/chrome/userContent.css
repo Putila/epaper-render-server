@@ -1,0 +1,8 @@
+@-moz-document url-prefix("https://tremonitori.digitransit.fi") {
+  body div.main-content-container  {
+    --monitor-background-color: #000 !important;
+  }
+  .main-content-container .monitor-container .separator {
+	  border-top: .3vh solid #fff !important;
+  }
+}
