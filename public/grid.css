@@ -11,7 +11,8 @@ html, body {
   height: 100%;
   overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  background-color: #1c57cf;
+  /*background-color: #1c57cf; */
+   background-color: #000;
 }
 
 .grid-container {
@@ -45,7 +46,7 @@ html, body {
   display: flex;
   flex-direction: column;
   padding: 2px;
-  background: #1c57cf;
+  background: #000;
   color: #ffffff;
   gap: 2px;
 }
