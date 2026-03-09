@@ -120,6 +120,7 @@ html, body {
   grid-column: 2;
   overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-width: none;
   background: #1c57cf;
   padding: 2px;
   display: flex;
