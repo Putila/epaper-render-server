@@ -38,91 +38,85 @@ html, body {
   border: none;
 }
 
-/* Bottom-left: Weather + Spanish word */
+/* Bottom-left: Weather + Language widgets */
 .grid-bottom-left {
   grid-row: 2;
   grid-column: 1;
   display: flex;
   flex-direction: column;
-  padding: 4px;
+  padding: 2px;
   background: #1c57cf;
   color: #ffffff;
-  gap: 4px;
+  gap: 2px;
 }
 
 /* Weather Widget */
 .weather-widget {
-  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 4px 6px;
+  padding: 2px 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: 4px;
 }
 
 .weather-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 2px;
 }
 
 .weather-location {
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 600;
 }
 
 .weather-date {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   opacity: 0.85;
 }
 
 .weather-temp {
-  font-size: 1.3rem;
+  font-size: 1.7rem;
   font-weight: bold;
-  margin-bottom: 2px;
+  line-height: 1.1;
 }
 
 .weather-desc {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   opacity: 0.9;
 }
 
-/* Spanish Word Widget */
-.spanish-widget {
+/* Language Widgets (shared styles for Spanish, Korean, Japanese) */
+.lang-widget {
   flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 4px 6px;
+  padding: 1px 4px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: 4px;
+  min-height: 0;
 }
 
-.spanish-label {
-  font-size: 0.65rem;
-  opacity: 0.8;
-  margin-bottom: 1px;
+.lang-widget .word-label {
+  font-size: 0.55rem;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
 }
 
-.spanish-word {
-  font-size: 1rem;
+.lang-widget .word-main {
+  font-size: 1.05rem;
   font-weight: bold;
-  margin-bottom: 1px;
+  line-height: 1.2;
 }
 
-.spanish-translation {
+.lang-widget .word-sub {
   font-size: 0.75rem;
   opacity: 0.9;
-  margin-bottom: 2px;
-}
-
-.spanish-example {
-  font-size: 0.65rem;
-  font-style: italic;
-  opacity: 0.8;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 /* Right side: Gym schedule */
@@ -133,35 +127,21 @@ html, body {
   overflow-x: hidden;
   scrollbar-width: none;
   background: #1c57cf;
-  padding: 2px;
+  padding: 2px 2px 2px 16px;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* Reuse schedule-container from styles.css but with vertical layout */
+.grid-right::-webkit-scrollbar {
+  width: 0;
+  display: none;
+}
+
 .grid-right .schedule-container {
   display: flex;
   flex-direction: row;
   align-items: top;
   gap: 2px;
   flex-wrap: nowrap;
-}
-
-/* Scrollbar styling */
-.grid-right::-webkit-scrollbar {
-  width: 6px;
-}
-
-.grid-right::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.grid-right::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 3px;
-}
-
-.grid-right::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
 }
