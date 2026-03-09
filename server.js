@@ -3,6 +3,7 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { google } = require('googleapis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -87,6 +88,152 @@ app.get('/api/weather', async (req, res) => {
 
 // Pre-fetch weather on startup so it's ready for the first screenshot
 fetchWeatherData();
+
+// --- Google API Setup ---
+const GOOGLE_KEY_FILE = process.env.GOOGLE_KEY_FILE || '/app/google-service-account.json';
+const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
+const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+let googleAuth = null;
+
+function getGoogleAuth() {
+  if (googleAuth) return googleAuth;
+  if (!fs.existsSync(GOOGLE_KEY_FILE)) {
+    console.warn('Google service account key not found:', GOOGLE_KEY_FILE);
+    return null;
+  }
+  googleAuth = new google.auth.GoogleAuth({
+    keyFile: GOOGLE_KEY_FILE,
+    scopes: [
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/drive.readonly'
+    ]
+  });
+  return googleAuth;
+}
+
+// --- Google Calendar API ---
+let calendarCache = { data: null, timestamp: 0 };
+const CALENDAR_CACHE_MS = 15 * 60 * 1000;
+
+async function fetchCalendarEvents() {
+  const auth = getGoogleAuth();
+  if (!auth || !GOOGLE_CALENDAR_ID) {
+    console.warn('Calendar not configured (missing auth or calendar ID)');
+    return null;
+  }
+  try {
+    const calendar = google.calendar({ version: 'v3', auth });
+    const now = new Date();
+    const maxDate = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+
+    const res = await calendar.events.list({
+      calendarId: GOOGLE_CALENDAR_ID,
+      timeMin: now.toISOString(),
+      timeMax: maxDate.toISOString(),
+      maxResults: 5,
+      singleEvents: true,
+      orderBy: 'startTime'
+    });
+
+    const events = (res.data.items || []).map(ev => ({
+      summary: ev.summary || '(ei otsikkoa)',
+      start: ev.start.dateTime || ev.start.date,
+      end: ev.end.dateTime || ev.end.date,
+      allDay: !ev.start.dateTime
+    }));
+
+    calendarCache = { data: { events }, timestamp: Date.now() };
+    console.log(`Calendar updated: ${events.length} events`);
+    return calendarCache.data;
+  } catch (error) {
+    console.error('Calendar fetch failed:', error.message);
+    return calendarCache.data;
+  }
+}
+
+app.get('/api/calendar', async (req, res) => {
+  if (!calendarCache.data || Date.now() - calendarCache.timestamp > CALENDAR_CACHE_MS) {
+    await fetchCalendarEvents();
+  }
+  if (calendarCache.data) {
+    res.json(calendarCache.data);
+  } else {
+    res.status(503).json({ error: 'Calendar data unavailable' });
+  }
+});
+
+// Pre-fetch calendar on startup
+fetchCalendarEvents();
+
+// --- Google Drive Photo API ---
+let driveFileListCache = { files: null, timestamp: 0 };
+let drivePhotoCache = { buffer: null, mimeType: null, timestamp: 0 };
+const DRIVE_LIST_CACHE_MS = 60 * 60 * 1000; // 1 hour
+const DRIVE_PHOTO_CACHE_MS = 15 * 60 * 1000; // 15 min
+
+async function fetchDriveFileList() {
+  const auth = getGoogleAuth();
+  if (!auth || !GOOGLE_DRIVE_FOLDER_ID) return null;
+  try {
+    const drive = google.drive({ version: 'v3', auth });
+    const res = await drive.files.list({
+      q: `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed = false`,
+      fields: 'files(id, name, mimeType)',
+      pageSize: 100
+    });
+    const files = res.data.files || [];
+    driveFileListCache = { files, timestamp: Date.now() };
+    console.log(`Drive file list updated: ${files.length} images`);
+    return files;
+  } catch (error) {
+    console.error('Drive file list failed:', error.message);
+    return driveFileListCache.files;
+  }
+}
+
+async function fetchDrivePhoto() {
+  let files = driveFileListCache.files;
+  if (!files || Date.now() - driveFileListCache.timestamp > DRIVE_LIST_CACHE_MS) {
+    files = await fetchDriveFileList();
+  }
+  if (!files || files.length === 0) return null;
+
+  const file = files[Math.floor(Math.random() * files.length)];
+  const auth = getGoogleAuth();
+  if (!auth) return null;
+
+  try {
+    const drive = google.drive({ version: 'v3', auth });
+    const res = await drive.files.get(
+      { fileId: file.id, alt: 'media' },
+      { responseType: 'arraybuffer' }
+    );
+    const buffer = Buffer.from(res.data);
+    drivePhotoCache = { buffer, mimeType: file.mimeType, timestamp: Date.now() };
+    console.log(`Drive photo loaded: ${file.name} (${buffer.length} bytes)`);
+    return drivePhotoCache;
+  } catch (error) {
+    console.error('Drive photo fetch failed:', error.message);
+    return drivePhotoCache.buffer ? drivePhotoCache : null;
+  }
+}
+
+app.get('/api/photo', async (req, res) => {
+  if (!drivePhotoCache.buffer || Date.now() - drivePhotoCache.timestamp > DRIVE_PHOTO_CACHE_MS) {
+    await fetchDrivePhoto();
+  }
+  if (drivePhotoCache.buffer) {
+    res.set('Content-Type', drivePhotoCache.mimeType || 'image/jpeg');
+    res.set('Cache-Control', 'no-store');
+    res.send(drivePhotoCache.buffer);
+  } else {
+    res.status(503).send('Photo unavailable');
+  }
+});
+
+// Pre-fetch photo on startup
+fetchDrivePhoto();
 
 // Grid layout route
 app.get('/grid', (req, res) => {

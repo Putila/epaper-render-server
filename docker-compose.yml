@@ -12,3 +12,6 @@ services:
       - WIDTH=800
       - HEIGHT=480
       - TZ=Europe/Helsinki
+      - GOOGLE_KEY_FILE=/app/google-service-account.json
+      - GOOGLE_CALENDAR_ID=
+      - GOOGLE_DRIVE_FOLDER_ID=
