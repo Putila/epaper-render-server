@@ -18,7 +18,10 @@
     <!-- Bottom-left: Weather + Spanish word -->
     <div class="grid-bottom-left">
       <div class="weather-widget">
-        <div class="weather-location">Tampere</div>
+        <div class="weather-header">
+          <div class="weather-location">Tampere</div>
+          <div class="weather-date" id="weatherDate"></div>
+        </div>
         <div class="weather-temp">--°C</div>
         <div class="weather-desc">Loading...</div>
       </div>
@@ -33,8 +36,6 @@
 
     <!-- Right: Gym schedule -->
     <div class="grid-right">
-      <div class="day-label" id="dayLabel"></div>
-
       <div class="schedule-container">
         <div class="gym-card card-city">
           <h2>City</h2>

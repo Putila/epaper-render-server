@@ -1,5 +1,14 @@
 // Weather widget - fetches from local server proxy for fast loading
 
+// Set current date and day in the weather widget
+const DAY_NAMES_FI = ['Su','Ma','Ti','Ke','To','Pe','La'];
+const dateEl = document.getElementById('weatherDate');
+if (dateEl) {
+  const now = new Date();
+  const day = DAY_NAMES_FI[now.getDay()];
+  dateEl.textContent = `${day} ${now.getDate()}.${now.getMonth() + 1}.`;
+}
+
 async function fetchWeather() {
   try {
     const response = await fetch('/api/weather');

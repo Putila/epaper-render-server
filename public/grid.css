@@ -61,10 +61,21 @@ html, body {
   border-radius: 6px;
 }
 
+.weather-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 2px;
+}
+
 .weather-location {
   font-size: 0.75rem;
   font-weight: 600;
-  margin-bottom: 2px;
+}
+
+.weather-date {
+  font-size: 0.7rem;
+  opacity: 0.85;
 }
 
 .weather-temp {
@@ -126,12 +137,6 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.grid-right .day-label {
-  font-size: 0.9rem;
-  color: #ffffff;
-  margin-bottom: 8px;
 }
 
 /* Reuse schedule-container from styles.css but with vertical layout */
