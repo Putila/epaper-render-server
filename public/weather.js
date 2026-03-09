@@ -6,7 +6,7 @@ const dateEl = document.getElementById('weatherDate');
 if (dateEl) {
   const now = new Date();
   const day = DAY_NAMES_FI[now.getDay()];
-  dateEl.textContent = `${day} ${now.getDate()}.${now.getMonth() + 1}.`;
+  dateEl.textContent = `${day} ${now.getDate()}.${now.getMonth() + 1}.${now.getFullYear()}`;
 }
 
 async function fetchWeather() {
