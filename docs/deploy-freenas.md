@@ -118,30 +118,52 @@ Create `/usr/local/etc/rc.d/epaper` inside the jail:
 
 ```sh
 #!/bin/sh
+
 # PROVIDE: epaper
 # REQUIRE: NETWORKING
 # KEYWORD: shutdown
 
 . /etc/rc.subr
 
-name="epaper"
-rcvar="epaper_enable"
-command="/usr/local/bin/node"
-command_args="/app/server.js &"
+name=epaper
+rcvar=epaper_enable
+
 pidfile="/var/run/${name}.pid"
-epaper_user="root"
+logfile="/var/log/${name}.log"
+
+start_cmd="epaper_start"
+stop_cmd="epaper_stop"
+
+epaper_start() {
+  echo "Starting ${name}"
+  cd /app
+  /usr/local/bin/node /app/server.js >> ${logfile} 2>&1 &
+  echo $! > ${pidfile}
+}
+
+epaper_stop() {
+  if [ -f ${pidfile} ]; then
+    echo "Stopping ${name}"
+    kill $(cat ${pidfile}) 2>/dev/null
+    rm -f ${pidfile}
+  fi
+}
 
 load_rc_config $name
 run_rc_command "$1"
 ```
 
-Enable:
+Enable and manage:
 
 ```bash
 chmod +x /usr/local/etc/rc.d/epaper
 sysrc epaper_enable=YES
-service epaper start
+service epaper start    # start the server
+service epaper stop     # stop the server
+service epaper restart  # restart the server
 ```
+
+Logs are written to `/var/log/epaper.log`.
 
 ## Endpoints
 
