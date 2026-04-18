@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Photos</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 20px; max-width: 1100px; color: #222; }
+    h1 { font-size: 1.4rem; margin: 0 0 16px; }
+    .upload { border: 2px dashed #aaa; padding: 28px; text-align: center; margin-bottom: 20px; border-radius: 8px; background: #fafafa; transition: background .15s, border-color .15s; }
+    .upload.dragover { border-color: #3366cc; background: #eef3ff; }
+    .upload p { margin: 0 0 8px; color: #555; }
+    .status { margin-top: 10px; color: #555; font-size: 0.9rem; min-height: 1.2em; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+    .photo { position: relative; aspect-ratio: 4/3; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; background: #eee; }
+    .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .photo button { position: absolute; top: 6px; right: 6px; background: rgba(255,255,255,.92); border: 1px solid #ccc; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 0.8rem; }
+    .photo button:hover { background: #fee; border-color: #c33; color: #c33; }
+    .photo .name { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 0.7rem; padding: 4px 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .empty { text-align: center; color: #888; padding: 40px; border: 1px dashed #ddd; border-radius: 8px; }
+    .count { color: #666; font-size: 0.9rem; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard Photos</h1>
+  <div class="upload" id="upload">
+    <p>Drop images here or <input type="file" id="fileInput" multiple accept="image/*"></p>
+    <div class="status" id="status"></div>
+  </div>
+  <div class="count" id="count"></div>
+  <div id="photos" class="grid"></div>
+
+  <script>
+    const photosEl = document.getElementById('photos');
+    const uploadEl = document.getElementById('upload');
+    const fileInput = document.getElementById('fileInput');
+    const statusEl = document.getElementById('status');
+    const countEl = document.getElementById('count');
+
+    async function load() {
+      const res = await fetch('/api/photos');
+      const { files } = await res.json();
+      countEl.textContent = files.length ? `${files.length} photo${files.length === 1 ? '' : 's'}` : '';
+      if (files.length === 0) {
+        photosEl.innerHTML = '<div class="empty">No photos yet. Upload some to get started.</div>';
+        return;
+      }
+      photosEl.innerHTML = files.map(f => {
+        const enc = encodeURIComponent(f);
+        const esc = f.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        return `
+          <div class="photo">
+            <img src="/photos/file/${enc}" alt="${esc}" loading="lazy">
+            <button data-name="${esc}">Delete</button>
+            <div class="name">${esc}</div>
+          </div>`;
+      }).join('');
+      photosEl.querySelectorAll('button').forEach(btn => {
+        btn.onclick = async () => {
+          if (!confirm(`Delete ${btn.dataset.name}?`)) return;
+          const r = await fetch('/api/photos/' + encodeURIComponent(btn.dataset.name), { method: 'DELETE' });
+          if (!r.ok) { statusEl.textContent = 'Delete failed'; return; }
+          load();
+        };
+      });
+    }
+
+    async function upload(files) {
+      if (!files || files.length === 0) return;
+      const form = new FormData();
+      for (const f of files) form.append('photos', f);
+      statusEl.textContent = `Uploading ${files.length} file${files.length === 1 ? '' : 's'}…`;
+      const res = await fetch('/api/photos', { method: 'POST', body: form });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        statusEl.textContent = 'Upload failed: ' + (body.error || res.statusText);
+        return;
+      }
+      const { uploaded } = await res.json();
+      statusEl.textContent = `Uploaded ${uploaded.length} file${uploaded.length === 1 ? '' : 's'}.`;
+      fileInput.value = '';
+      load();
+    }
+
+    fileInput.onchange = () => upload(fileInput.files);
+    uploadEl.addEventListener('dragover', e => { e.preventDefault(); uploadEl.classList.add('dragover'); });
+    uploadEl.addEventListener('dragleave', () => uploadEl.classList.remove('dragover'));
+    uploadEl.addEventListener('drop', e => {
+      e.preventDefault();
+      uploadEl.classList.remove('dragover');
+      upload(e.dataTransfer.files);
+    });
+
+    load();
+  </script>
+</body>
+</html>

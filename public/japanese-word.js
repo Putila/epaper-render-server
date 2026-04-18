@@ -163,7 +163,14 @@ const japaneseWords = [
 ];
 
 function getJapaneseWord() {
-  const index = Math.floor(Math.random() * japaneseWords.length);
+  const mins = (window.DASHBOARD_SETTINGS && window.DASHBOARD_SETTINGS.wordRotationMinutes) || 0;
+  let index;
+  if (mins > 0) {
+    const bucket = Math.floor(Date.now() / (mins * 60 * 1000));
+    index = Math.abs((bucket + 13) * 2654435761) % japaneseWords.length;
+  } else {
+    index = Math.floor(Math.random() * japaneseWords.length);
+  }
   return japaneseWords[index];
 }
 

@@ -170,7 +170,14 @@ const koreanWords = [
 ];
 
 function getKoreanWord() {
-  const index = Math.floor(Math.random() * koreanWords.length);
+  const mins = (window.DASHBOARD_SETTINGS && window.DASHBOARD_SETTINGS.wordRotationMinutes) || 0;
+  let index;
+  if (mins > 0) {
+    const bucket = Math.floor(Date.now() / (mins * 60 * 1000));
+    index = Math.abs((bucket + 7) * 2654435761) % koreanWords.length;
+  } else {
+    index = Math.floor(Math.random() * koreanWords.length);
+  }
   return koreanWords[index];
 }
 

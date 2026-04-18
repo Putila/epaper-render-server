@@ -1,0 +1,5 @@
+node_modules/
+photos/
+settings.json
+google-service-account.json
+*.log

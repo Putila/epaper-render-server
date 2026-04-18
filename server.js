@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { google } = require('googleapis');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -92,7 +93,6 @@ fetchWeatherData();
 // --- Google API Setup ---
 const GOOGLE_KEY_FILE = process.env.GOOGLE_KEY_FILE || '/app/google-service-account.json';
 const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID;
-const GOOGLE_DRIVE_FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
 let googleAuth = null;
 
@@ -166,74 +166,206 @@ app.get('/api/calendar', async (req, res) => {
 // Pre-fetch calendar on startup
 fetchCalendarEvents();
 
-// --- Google Drive Photo API ---
-let driveFileListCache = { files: null, timestamp: 0 };
-let drivePhotoCache = { buffer: null, mimeType: null, timestamp: 0 };
-const DRIVE_LIST_CACHE_MS = 60 * 60 * 1000; // 1 hour
-const DRIVE_PHOTO_CACHE_MS = 15 * 60 * 1000; // 15 min
+// --- Local Photo Folder ---
+const PHOTO_DIR = process.env.PHOTO_DIR || path.join(__dirname, 'photos');
+const ALLOWED_EXT = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp']);
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
-async function fetchDriveFileList() {
-  const auth = getGoogleAuth();
-  if (!auth || !GOOGLE_DRIVE_FOLDER_ID) return null;
-  try {
-    const drive = google.drive({ version: 'v3', auth });
-    const res = await drive.files.list({
-      q: `'${GOOGLE_DRIVE_FOLDER_ID}' in parents and mimeType contains 'image/' and trashed = false`,
-      fields: 'files(id, name, mimeType)',
-      pageSize: 100
-    });
-    const files = res.data.files || [];
-    driveFileListCache = { files, timestamp: Date.now() };
-    console.log(`Drive file list updated: ${files.length} images`);
-    return files;
-  } catch (error) {
-    console.error('Drive file list failed:', error.message);
-    return driveFileListCache.files;
-  }
+if (!fs.existsSync(PHOTO_DIR)) {
+  fs.mkdirSync(PHOTO_DIR, { recursive: true });
 }
 
-async function fetchDrivePhoto() {
-  let files = driveFileListCache.files;
-  if (!files || Date.now() - driveFileListCache.timestamp > DRIVE_LIST_CACHE_MS) {
-    files = await fetchDriveFileList();
-  }
-  if (!files || files.length === 0) return null;
-
-  const file = files[Math.floor(Math.random() * files.length)];
-  const auth = getGoogleAuth();
-  if (!auth) return null;
-
-  try {
-    const drive = google.drive({ version: 'v3', auth });
-    const res = await drive.files.get(
-      { fileId: file.id, alt: 'media' },
-      { responseType: 'arraybuffer' }
-    );
-    const buffer = Buffer.from(res.data);
-    drivePhotoCache = { buffer, mimeType: file.mimeType, timestamp: Date.now() };
-    console.log(`Drive photo loaded: ${file.name} (${buffer.length} bytes)`);
-    return drivePhotoCache;
-  } catch (error) {
-    console.error('Drive photo fetch failed:', error.message);
-    return drivePhotoCache.buffer ? drivePhotoCache : null;
-  }
+function listPhotos() {
+  return fs.readdirSync(PHOTO_DIR)
+    .filter(f => ALLOWED_EXT.has(path.extname(f).toLowerCase()))
+    .sort();
 }
 
-app.get('/api/photo', async (req, res) => {
-  if (!drivePhotoCache.buffer || Date.now() - drivePhotoCache.timestamp > DRIVE_PHOTO_CACHE_MS) {
-    await fetchDrivePhoto();
+function isSafeName(name) {
+  return name === path.basename(name) && ALLOWED_EXT.has(path.extname(name).toLowerCase());
+}
+
+// --- Settings ---
+const SETTINGS_FILE = process.env.SETTINGS_FILE || path.join(__dirname, 'settings.json');
+const DEFAULT_SETTINGS = {
+  gymHours: { start: 8, end: 11 },
+  photoRotationMinutes: 15,
+  wordRotationMinutes: 10,
+  photoOverride: null,
+  wordsEnabled: { spanish: true, korean: true, japanese: true }
+};
+
+function loadSettings() {
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8'));
+      return {
+        ...DEFAULT_SETTINGS,
+        ...raw,
+        gymHours: { ...DEFAULT_SETTINGS.gymHours, ...(raw.gymHours || {}) },
+        wordsEnabled: { ...DEFAULT_SETTINGS.wordsEnabled, ...(raw.wordsEnabled || {}) }
+      };
+    }
+  } catch (e) {
+    console.error('Failed to read settings, using defaults:', e.message);
   }
-  if (drivePhotoCache.buffer) {
-    res.set('Content-Type', drivePhotoCache.mimeType || 'image/jpeg');
-    res.set('Cache-Control', 'no-store');
-    res.send(drivePhotoCache.buffer);
-  } else {
-    res.status(503).send('Photo unavailable');
+  return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettings(s) {
+  fs.writeFileSync(SETTINGS_FILE, JSON.stringify(s, null, 2));
+}
+
+function clampInt(v, min, max, fallback) {
+  const n = parseInt(v, 10);
+  if (Number.isNaN(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function validateSettings(partial, current) {
+  const next = { ...current };
+  if (partial.gymHours && typeof partial.gymHours === 'object') {
+    next.gymHours = {
+      start: clampInt(partial.gymHours.start, 0, 23, current.gymHours.start),
+      end: clampInt(partial.gymHours.end, 0, 24, current.gymHours.end)
+    };
   }
+  if (partial.photoRotationMinutes !== undefined) {
+    next.photoRotationMinutes = clampInt(partial.photoRotationMinutes, 1, 1440, current.photoRotationMinutes);
+  }
+  if (partial.wordRotationMinutes !== undefined) {
+    next.wordRotationMinutes = clampInt(partial.wordRotationMinutes, 0, 1440, current.wordRotationMinutes);
+  }
+  if (partial.photoOverride !== undefined) {
+    const v = partial.photoOverride;
+    next.photoOverride = (v && isSafeName(v) && fs.existsSync(path.join(PHOTO_DIR, v))) ? v : null;
+  }
+  if (partial.wordsEnabled && typeof partial.wordsEnabled === 'object') {
+    next.wordsEnabled = { ...current.wordsEnabled };
+    for (const k of ['spanish', 'korean', 'japanese']) {
+      if (typeof partial.wordsEnabled[k] === 'boolean') next.wordsEnabled[k] = partial.wordsEnabled[k];
+    }
+  }
+  return next;
+}
+
+app.use(express.json());
+
+app.get('/api/settings', (req, res) => {
+  res.json(loadSettings());
 });
 
-// Pre-fetch photo on startup
-fetchDrivePhoto();
+app.post('/api/settings', (req, res) => {
+  const current = loadSettings();
+  const next = validateSettings(req.body || {}, current);
+  saveSettings(next);
+  res.json(next);
+});
+
+// Settings exposed as a JS global so client pages can read synchronously
+app.get('/api/settings.js', (req, res) => {
+  res.set('Content-Type', 'application/javascript');
+  res.set('Cache-Control', 'no-store');
+  res.send(`window.DASHBOARD_SETTINGS = ${JSON.stringify(loadSettings())};`);
+});
+
+// --- Photo rotation (sticky + override) ---
+let stickyPhoto = { file: null, pickedAt: 0 };
+
+function currentPhotoFile() {
+  const settings = loadSettings();
+  if (settings.photoOverride) {
+    const p = path.join(PHOTO_DIR, settings.photoOverride);
+    if (fs.existsSync(p)) return settings.photoOverride;
+  }
+  const files = listPhotos();
+  if (files.length === 0) return null;
+  const rotationMs = settings.photoRotationMinutes * 60 * 1000;
+  const stale = !stickyPhoto.file
+    || !files.includes(stickyPhoto.file)
+    || Date.now() - stickyPhoto.pickedAt > rotationMs;
+  if (stale) {
+    stickyPhoto = { file: files[Math.floor(Math.random() * files.length)], pickedAt: Date.now() };
+  }
+  return stickyPhoto.file;
+}
+
+app.get('/api/photo', (req, res) => {
+  const file = currentPhotoFile();
+  if (!file) {
+    res.status(404).send('No photos available');
+    return;
+  }
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(PHOTO_DIR, file));
+});
+
+app.get('/api/photos', (req, res) => {
+  res.json({ files: listPhotos() });
+});
+
+app.get('/photos/file/:name', (req, res) => {
+  const name = req.params.name;
+  if (!isSafeName(name)) {
+    res.status(400).send('Invalid filename');
+    return;
+  }
+  const filePath = path.join(PHOTO_DIR, name);
+  if (!fs.existsSync(filePath)) {
+    res.status(404).send('Not found');
+    return;
+  }
+  res.sendFile(filePath);
+});
+
+const photoUpload = multer({
+  storage: multer.diskStorage({
+    destination: PHOTO_DIR,
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (!ALLOWED_EXT.has(ext)) {
+        cb(new Error('Unsupported file type'));
+        return;
+      }
+      const base = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9._-]/g, '_');
+      cb(null, `${Date.now()}_${base}${ext}`);
+    }
+  }),
+  limits: { fileSize: MAX_UPLOAD_BYTES }
+});
+
+app.post('/api/photos', (req, res) => {
+  photoUpload.array('photos', 20)(req, res, (err) => {
+    if (err) {
+      res.status(400).json({ error: err.message });
+      return;
+    }
+    res.json({ uploaded: (req.files || []).map(f => f.filename) });
+  });
+});
+
+app.delete('/api/photos/:name', (req, res) => {
+  const name = req.params.name;
+  if (!isSafeName(name)) {
+    res.status(400).send('Invalid filename');
+    return;
+  }
+  const filePath = path.join(PHOTO_DIR, name);
+  if (!fs.existsSync(filePath)) {
+    res.status(404).send('Not found');
+    return;
+  }
+  fs.unlinkSync(filePath);
+  res.json({ deleted: name });
+});
+
+app.get('/photos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'photos.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
 // Grid layout route
 app.get('/grid', (req, res) => {
@@ -282,17 +414,22 @@ app.get('/capture/grid', (req, res) => {
 function takeScreenshot(url, width, height, timeoutMs) {
   return new Promise((resolve, reject) => {
     const tmpFile = path.join(os.tmpdir(), `screenshot-${Date.now()}.png`);
+    const profileDir = path.join(__dirname, 'firefox-profile');
+
+    // A previous Firefox that hit the timeout may have left .parentlock behind.
+    // If it's still there, a fresh Firefox refuses to start with "profile in use".
+    try { fs.unlinkSync(path.join(profileDir, '.parentlock')); } catch (e) { /* ignore */ }
 
     const args = [
       '--headless',
       '--no-remote',
-      '--profile', path.join(__dirname, 'firefox-profile'),
+      '--profile', profileDir,
       `--window-size=${width},${height}`,
       '--screenshot', tmpFile,
       url
     ];
 
-    execFile(FIREFOX_PATH, args, { timeout: timeoutMs + 10000 }, (error) => {
+    execFile(FIREFOX_PATH, args, { timeout: timeoutMs + 10000, killSignal: 'SIGKILL' }, (error) => {
       if (error && !fs.existsSync(tmpFile)) {
         reject(new Error(`Firefox screenshot failed: ${error.message}`));
         return;

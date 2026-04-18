@@ -89,18 +89,15 @@ const spanishWords = [
 ];
 
 function getWordOfDay() {
-  // Select a random word on each page load
-  const index = Math.floor(Math.random() * spanishWords.length);
+  const mins = (window.DASHBOARD_SETTINGS && window.DASHBOARD_SETTINGS.wordRotationMinutes) || 0;
+  let index;
+  if (mins > 0) {
+    const bucket = Math.floor(Date.now() / (mins * 60 * 1000));
+    index = Math.abs((bucket + 0) * 2654435761) % spanishWords.length;
+  } else {
+    index = Math.floor(Math.random() * spanishWords.length);
+  }
   return spanishWords[index];
-
-  // Previous day-based selection (one word per day):
-  // const now = new Date();
-  // const start = new Date(now.getFullYear(), 0, 0);
-  // const diff = now - start;
-  // const oneDay = 1000 * 60 * 60 * 24;
-  // const dayOfYear = Math.floor(diff / oneDay);
-  // const index = dayOfYear % spanishWords.length;
-  // return spanishWords[index];
 }
 
 function displaySpanishWord() {

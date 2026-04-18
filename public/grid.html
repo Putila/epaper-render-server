@@ -7,12 +7,14 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="grid.css">
   <link rel="stylesheet" href="gym-schedule.css">
+  <script src="/api/settings.js"></script>
 </head>
 <body>
   <div class="grid-container">
     <!-- Top-left: Transit iframe -->
     <div class="grid-top-left">
-      <iframe src="https://tremonitori.digitransit.fi/view?cont=a2lbjToAAyFkh5sdOSAeIA=="></iframe>
+      <!-- Replace the `cont` query param with your own digitransit display config from https://tremonitori.digitransit.fi/ -->
+      <iframe src="https://tremonitori.digitransit.fi/"></iframe>
     </div>
 
     <!-- Bottom-left: Weather + Language widgets -->
@@ -27,50 +29,72 @@
         <div class="weather-forecast" id="weatherForecast"></div>
       </div>
 
-      <div class="lang-widget">
+      <div class="lang-widget" id="lang-spanish">
         <div class="word-label">Español</div>
         <div class="word-main spanish-word">---</div>
         <div class="word-sub spanish-translation">---</div>
       </div>
 
-      <div class="lang-widget">
+      <div class="lang-widget" id="lang-korean">
         <div class="word-label">한국어</div>
         <div class="word-main korean-word">---</div>
         <div class="word-sub korean-translation">---</div>
       </div>
 
-      <div class="lang-widget">
+      <div class="lang-widget" id="lang-japanese">
         <div class="word-label">日本語</div>
         <div class="word-main japanese-word">---</div>
         <div class="word-sub japanese-translation">---</div>
       </div>
     </div>
 
-    <!-- Right: Gym schedule -->
+    <!-- Right: Photo OR Gym schedule depending on time -->
     <div class="grid-right">
-      <div class="schedule-container">
-        <div class="gym-card card-city">
-          <h2>City</h2>
-          <div class="gym-schedule gym-city" id="sched-city"></div>
-        </div>
-
-        <div class="gym-card card-park">
-          <h2>Park</h2>
-          <div class="gym-schedule gym-park" id="sched-park"></div>
-        </div>
-
-        <div class="gym-card card-hervanta">
-          <h2>Hervanta</h2>
-          <div class="gym-schedule gym-hervanta" id="sched-hervanta"></div>
+      <div id="right-photo" class="right-slot">
+        <img id="drivePhoto" src="/api/photo" alt="">
+      </div>
+      <div id="right-gym" class="right-slot" hidden>
+        <div class="schedule-container">
+          <div class="gym-card card-city">
+            <h2>City</h2>
+            <div class="gym-schedule gym-city" id="sched-city"></div>
+          </div>
+          <div class="gym-card card-park">
+            <h2>Park</h2>
+            <div class="gym-schedule gym-park" id="sched-park"></div>
+          </div>
+          <div class="gym-card card-hervanta">
+            <h2>Hervanta</h2>
+            <div class="gym-schedule gym-hervanta" id="sched-hervanta"></div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="gym-schedule.js"></script>
+  <script>
+    (function () {
+      const s = window.DASHBOARD_SETTINGS || {
+        gymHours: { start: 8, end: 11 },
+        wordsEnabled: { spanish: true, korean: true, japanese: true }
+      };
+      const h = new Date().getHours();
+      const { start, end } = s.gymHours;
+      const showGym = start < end ? (h >= start && h < end) : (h >= start || h < end);
+      document.getElementById('right-photo').hidden = showGym;
+      document.getElementById('right-gym').hidden = !showGym;
+
+      const we = s.wordsEnabled || {};
+      for (const lang of ['spanish', 'korean', 'japanese']) {
+        const el = document.getElementById('lang-' + lang);
+        if (el && we[lang] === false) el.hidden = true;
+      }
+    })();
+  </script>
   <script src="weather.js"></script>
   <script src="spanish-word.js"></script>
   <script src="korean-word.js"></script>
   <script src="japanese-word.js"></script>
+  <script src="gym-schedule.js"></script>
 </body>
 </html>

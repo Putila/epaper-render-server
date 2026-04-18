@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 20px; max-width: 1300px; color: #222; background: #fafafa; }
+    h1 { font-size: 1.4rem; margin: 0 0 16px; }
+    h2 { font-size: 1.05rem; margin: 0 0 10px; color: #444; }
+    .layout { display: grid; grid-template-columns: 1fr 820px; gap: 20px; align-items: start; }
+    @media (max-width: 1180px) { .layout { grid-template-columns: 1fr; } }
+    .panel { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+    .panel + .panel { margin-top: 16px; }
+    label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 4px; margin-top: 10px; }
+    input[type=number], select { padding: 6px 8px; font-size: 0.95rem; border: 1px solid #bbb; border-radius: 4px; width: 100%; box-sizing: border-box; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hint { font-size: 0.8rem; color: #777; margin-top: 4px; }
+    button { margin-top: 14px; padding: 8px 16px; font-size: 0.95rem; border: 1px solid #3366cc; background: #3366cc; color: #fff; border-radius: 4px; cursor: pointer; }
+    button:hover { background: #2a55aa; }
+    button.secondary { background: #fff; color: #3366cc; }
+    button.secondary:hover { background: #eef3ff; }
+    .links a { display: inline-block; margin-right: 12px; color: #3366cc; text-decoration: none; font-size: 0.95rem; }
+    .links a:hover { text-decoration: underline; }
+    .status { margin-top: 12px; font-size: 0.85rem; min-height: 1.2em; color: #3a8a3a; }
+    .status.error { color: #c33; }
+    .preview-frame { width: 800px; height: 480px; border: 1px solid #333; background: #000; display: block; }
+    .preview-tools { margin-top: 10px; font-size: 0.85rem; color: #666; }
+    .preview-tools button { margin-top: 0; margin-right: 8px; }
+    .toggles { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
+    .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; color: #333; margin: 0; cursor: pointer; }
+    .toggle input { width: auto; margin: 0; }
+  </style>
+</head>
+<body>
+  <h1>Dashboard Admin</h1>
+
+  <div class="layout">
+    <div>
+      <div class="panel">
+        <h2>Display rules</h2>
+        <label>Show gym schedule between hours (24h clock)</label>
+        <div class="row">
+          <div>
+            <input type="number" id="gymStart" min="0" max="23">
+            <div class="hint">Start hour (inclusive)</div>
+          </div>
+          <div>
+            <input type="number" id="gymEnd" min="0" max="24">
+            <div class="hint">End hour (exclusive)</div>
+          </div>
+        </div>
+
+        <label for="photoRotation">Photo rotates every (minutes)</label>
+        <input type="number" id="photoRotation" min="1" max="1440">
+
+        <label for="wordRotation">Words of the day rotate every (minutes, 0 = each refresh)</label>
+        <input type="number" id="wordRotation" min="0" max="1440">
+
+        <label>Words of the day shown</label>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="wordSpanish"> Español</label>
+          <label class="toggle"><input type="checkbox" id="wordKorean"> 한국어</label>
+          <label class="toggle"><input type="checkbox" id="wordJapanese"> 日本語</label>
+        </div>
+
+        <label for="photoOverride">Photo override (pin a specific image)</label>
+        <select id="photoOverride">
+          <option value="">— none (rotate) —</option>
+        </select>
+
+        <button id="save">Save</button>
+        <button class="secondary" id="reload">Reload</button>
+        <div id="status" class="status"></div>
+      </div>
+
+      <div class="panel links">
+        <h2>Quick links</h2>
+        <a href="/photos" target="_blank">📁 Manage photos</a>
+        <a href="/grid" target="_blank">🖼 Open grid in new tab</a>
+        <a href="/api/settings" target="_blank">⚙ Raw settings JSON</a>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Live preview</h2>
+      <iframe id="preview" class="preview-frame" src="/grid"></iframe>
+      <div class="preview-tools">
+        <button id="refreshPreview">Refresh preview</button>
+        <span id="previewNote">800 × 480 — matches the e-paper display.</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const statusEl = $('status');
+
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle('error', !!isError);
+    }
+
+    async function loadSettings() {
+      const [settingsRes, photosRes] = await Promise.all([
+        fetch('/api/settings'),
+        fetch('/api/photos')
+      ]);
+      const settings = await settingsRes.json();
+      const { files } = await photosRes.json();
+
+      $('gymStart').value = settings.gymHours.start;
+      $('gymEnd').value = settings.gymHours.end;
+      $('photoRotation').value = settings.photoRotationMinutes;
+      $('wordRotation').value = settings.wordRotationMinutes;
+      $('wordSpanish').checked = settings.wordsEnabled.spanish !== false;
+      $('wordKorean').checked = settings.wordsEnabled.korean !== false;
+      $('wordJapanese').checked = settings.wordsEnabled.japanese !== false;
+
+      const sel = $('photoOverride');
+      sel.innerHTML = '<option value="">— none (rotate) —</option>' +
+        files.map(f => `<option value="${f}">${f}</option>`).join('');
+      sel.value = settings.photoOverride || '';
+
+      setStatus('');
+    }
+
+    async function save() {
+      const body = {
+        gymHours: {
+          start: parseInt($('gymStart').value, 10),
+          end: parseInt($('gymEnd').value, 10)
+        },
+        photoRotationMinutes: parseInt($('photoRotation').value, 10),
+        wordRotationMinutes: parseInt($('wordRotation').value, 10),
+        photoOverride: $('photoOverride').value || null,
+        wordsEnabled: {
+          spanish: $('wordSpanish').checked,
+          korean: $('wordKorean').checked,
+          japanese: $('wordJapanese').checked
+        }
+      };
+      const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        setStatus('Save failed', true);
+        return;
+      }
+      setStatus('Saved.');
+      refreshPreview();
+    }
+
+    function refreshPreview() {
+      $('preview').src = '/grid?t=' + Date.now();
+    }
+
+    $('save').onclick = save;
+    $('reload').onclick = loadSettings;
+    $('refreshPreview').onclick = refreshPreview;
+
+    loadSettings();
+  </script>
+</body>
+</html>

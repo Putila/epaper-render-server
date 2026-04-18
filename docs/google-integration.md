@@ -1,13 +1,14 @@
-# Google Calendar & Drive Photo Integration
+# Google Calendar Integration
 
-The server supports displaying Google Calendar events and random photos from a Google Drive folder. Both use a Google Service Account for authentication.
+The server supports displaying Google Calendar events via a Google Service Account.
+
+> **Note:** Photo rendering no longer uses Google Drive. Photos are now stored in a local folder on the jail and managed via the [`/photos`](#) admin page (see [OPERATIONS.md](../../OPERATIONS.md)). The instructions below cover Calendar only; the historical Drive setup is no longer needed.
 
 ## Prerequisites
 
 1. A Google Cloud project (create at https://console.cloud.google.com)
 2. **Google Calendar API** enabled
-3. **Google Drive API** enabled
-4. A **Service Account** with a downloaded JSON key file
+3. A **Service Account** with a downloaded JSON key file
 
 ## Setup
 
@@ -47,7 +48,7 @@ The service account email looks like: `name@project-id.iam.gserviceaccount.com`
 Copy the JSON key file to the server:
 
 ```bash
-scp google-service-account.json root@192.168.1.32:/mnt/All/iocage/jails/render-server/root/app/google-service-account.json
+scp google-service-account.json <USER>@<TRUENAS_IP>:/mnt/All/iocage/jails/render-server/root/app/google-service-account.json
 ```
 
 ### 5. Configure Environment Variables
