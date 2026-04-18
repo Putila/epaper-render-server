@@ -192,7 +192,8 @@ const DEFAULT_SETTINGS = {
   photoRotationMinutes: 15,
   wordRotationMinutes: 10,
   photoOverride: null,
-  wordsEnabled: { spanish: true, korean: true, japanese: true }
+  wordsEnabled: { spanish: true, korean: true, japanese: true },
+  transitUrl: 'https://tremonitori.digitransit.fi/'
 };
 
 function loadSettings() {
@@ -244,6 +245,14 @@ function validateSettings(partial, current) {
     next.wordsEnabled = { ...current.wordsEnabled };
     for (const k of ['spanish', 'korean', 'japanese']) {
       if (typeof partial.wordsEnabled[k] === 'boolean') next.wordsEnabled[k] = partial.wordsEnabled[k];
+    }
+  }
+  if (partial.transitUrl !== undefined) {
+    const v = partial.transitUrl;
+    if (typeof v === 'string' && /^https?:\/\//i.test(v) && v.length < 2000) {
+      next.transitUrl = v;
+    } else if (v === null || v === '') {
+      next.transitUrl = DEFAULT_SETTINGS.transitUrl;
     }
   }
   return next;

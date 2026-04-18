@@ -11,10 +11,9 @@
 </head>
 <body>
   <div class="grid-container">
-    <!-- Top-left: Transit iframe -->
+    <!-- Top-left: Transit iframe — URL is configurable from /admin (settings.transitUrl) -->
     <div class="grid-top-left">
-      <!-- Replace the `cont` query param with your own digitransit display config from https://tremonitori.digitransit.fi/ -->
-      <iframe src="https://tremonitori.digitransit.fi/"></iframe>
+      <iframe id="transit-iframe" src="https://tremonitori.digitransit.fi/"></iframe>
     </div>
 
     <!-- Bottom-left: Weather + Language widgets -->
@@ -88,6 +87,11 @@
       for (const lang of ['spanish', 'korean', 'japanese']) {
         const el = document.getElementById('lang-' + lang);
         if (el && we[lang] === false) el.hidden = true;
+      }
+
+      if (s.transitUrl) {
+        const iframe = document.getElementById('transit-iframe');
+        if (iframe) iframe.src = s.transitUrl;
       }
     })();
   </script>
