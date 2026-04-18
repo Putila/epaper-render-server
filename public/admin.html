@@ -57,6 +57,13 @@
         <label for="wordRotation">Words of the day rotate every (minutes, 0 = each refresh)</label>
         <input type="number" id="wordRotation" min="0" max="1440">
 
+        <label>Weather widgets</label>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="simpleWeather"> Simple weather</label>
+          <label class="toggle"><input type="checkbox" id="advancedWeather"> Advanced weather</label>
+        </div>
+        <div class="hint">Advanced weather takes precedence — when on, it hides the simple weather and all language widgets.</div>
+
         <label>Words of the day shown</label>
         <div class="toggles">
           <label class="toggle"><input type="checkbox" id="wordSpanish"> Español</label>
@@ -120,6 +127,8 @@
       $('wordSpanish').checked = settings.wordsEnabled.spanish !== false;
       $('wordKorean').checked = settings.wordsEnabled.korean !== false;
       $('wordJapanese').checked = settings.wordsEnabled.japanese !== false;
+      $('simpleWeather').checked = settings.simpleWeatherEnabled !== false;
+      $('advancedWeather').checked = settings.advancedWeatherEnabled === true;
       $('transitUrl').value = settings.transitUrl || '';
 
       const sel = $('photoOverride');
@@ -144,6 +153,8 @@
           korean: $('wordKorean').checked,
           japanese: $('wordJapanese').checked
         },
+        simpleWeatherEnabled: $('simpleWeather').checked,
+        advancedWeatherEnabled: $('advancedWeather').checked,
         transitUrl: $('transitUrl').value || null
       };
       const res = await fetch('/api/settings', {

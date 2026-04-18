@@ -46,7 +46,7 @@ html, body {
   display: flex;
   flex-direction: column;
   padding: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  /* background:rgb(255 255 255); */
   color: #ffffff;
   gap: 2px;
 }
@@ -73,8 +73,8 @@ html, body {
 }
 
 .weather-date {
-  font-size: 0.8rem;
-  opacity: 0.85;
+  font-size: 1rem;
+  opacity: 1;
 }
 
 .weather-temp {
@@ -85,16 +85,117 @@ html, body {
 
 .weather-desc {
   font-size: 0.8rem;
-  opacity: 0.9;
+  opacity:1;
 }
 
 .weather-forecast {
-  font-size: 0.65rem;
-  opacity: 0.75;
+  font-size: 0.85rem;
+  opacity: 1;
   letter-spacing: 0.3px;
   margin-top: 1px;
   font-variant-numeric: tabular-nums;
 }
+
+.weather-widget[hidden] { display: none; }
+
+/* Advanced weather widget: light text on dark, colored accents for e-paper palette. */
+.weather-advanced {
+  flex: 1;
+  background: #000;
+  color: #fff;
+  border-radius: 4px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-advanced[hidden] { display: none; }
+
+.wa-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.75rem;
+}
+
+.wa-location { font-weight: 600; }
+.wa-date { letter-spacing: 0.3px; }
+
+.wa-current {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wa-icon-big { width: 56px; height: 56px; flex-shrink: 0; }
+
+.wa-current-text { display: flex; flex-direction: column; line-height: 1; }
+.wa-temp { font-size: 2.2rem; font-weight: 700; }
+.wa-desc { font-size: 0.85rem; margin-top: 2px; }
+
+.wa-hourly {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 2px;
+}
+
+.wa-hour {
+  text-align: center;
+  font-size: 0.7rem;
+  line-height: 1.1;
+}
+
+.wa-hour-time { font-weight: 600; }
+.wa-hour-icon { width: 28px; height: 28px; margin: 1px auto; }
+.wa-hour-temp { font-weight: 700; font-size: 0.78rem; }
+
+.wa-extras {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wa-alert {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78rem;
+  line-height: 1.1;
+}
+
+.wa-error { font-size: 0.85rem; text-align: center; padding: 8px; }
+
+/* Weather icons: Material Symbols SVGs loaded as mask-image, colored per type
+   via background-color. Pure palette colors (yellow/blue/red/white) keep them
+   readable after the e-paper's 6-color quantization. */
+.wx-icon {
+  display: inline-block;
+  background-color: currentColor;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.wa-icon-big .wx-icon,
+.wa-hour-icon .wx-icon { width: 100%; height: 100%; }
+.wa-alert .wx-icon { width: 20px; height: 20px; }
+
+.wx-sun      { -webkit-mask-image: url(/svg/clear_day_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);          mask-image: url(/svg/clear_day_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);          background-color: #ffb300; }
+.wx-partly   { -webkit-mask-image: url(/svg/partly_cloudy_day_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);  mask-image: url(/svg/partly_cloudy_day_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);  background-color: #ffb300; }
+.wx-cloud    { -webkit-mask-image: url(/svg/cloud_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);              mask-image: url(/svg/cloud_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg); }
+.wx-fog      { -webkit-mask-image: url(/svg/air_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);                mask-image: url(/svg/air_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg); }
+.wx-rain     { -webkit-mask-image: url(/svg/rainy_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);              mask-image: url(/svg/rainy_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);              background-color: #0000ff; }
+.wx-drizzle  { -webkit-mask-image: url(/svg/rainy_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);              mask-image: url(/svg/rainy_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);              background-color: #0000ff; }
+.wx-snow     { -webkit-mask-image: url(/svg/weather_snowy_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);      mask-image: url(/svg/weather_snowy_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg); }
+.wx-thunder  { -webkit-mask-image: url(/svg/thunderstorm_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);       mask-image: url(/svg/thunderstorm_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);       background-color: #ff0000; }
+.wx-hail     { -webkit-mask-image: url(/svg/weather_hail_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);       mask-image: url(/svg/weather_hail_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);       background-color: #0000ff; }
+.wx-mix      { -webkit-mask-image: url(/svg/weather_mix_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);        mask-image: url(/svg/weather_mix_24dp_E3E3E3_FILL0_wght400_GRAD0_opsz24.svg);        background-color: #0000ff; }
 
 /* Language Widgets (shared styles for Spanish, Korean, Japanese) */
 .lang-widget {
@@ -113,7 +214,7 @@ html, body {
 
 .lang-widget .word-label {
   font-size: 0.55rem;
-  opacity: 0.65;
+  opacity: 1;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   line-height: 1.1;
@@ -126,7 +227,7 @@ html, body {
 }
 
 .lang-widget .word-sub {
-  font-size: 0.75rem;
+  font-size: 0.95rem;
   opacity: 0.9;
   line-height: 1.1;
 }

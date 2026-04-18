@@ -16,9 +16,11 @@
       <iframe id="transit-iframe" src="https://tremonitori.digitransit.fi/"></iframe>
     </div>
 
-    <!-- Bottom-left: Weather + Language widgets -->
+    <!-- Bottom-left: Weather + Language widgets (or advanced weather, per settings) -->
     <div class="grid-bottom-left">
-      <div class="weather-widget">
+      <div class="weather-advanced" id="weatherAdvanced" hidden></div>
+
+      <div class="weather-widget" id="weatherSimple">
         <div class="weather-header">
           <div class="weather-location">Tampere</div>
           <div class="weather-date" id="weatherDate"></div>
@@ -83,10 +85,17 @@
       document.getElementById('right-photo').hidden = showGym;
       document.getElementById('right-gym').hidden = !showGym;
 
+      // Weather mode: advanced takes precedence and hides simple weather + languages.
+      const advanced = s.advancedWeatherEnabled === true;
+      const simple = s.simpleWeatherEnabled !== false;
+      document.getElementById('weatherAdvanced').hidden = !advanced;
+      document.getElementById('weatherSimple').hidden = advanced || !simple;
+
       const we = s.wordsEnabled || {};
       for (const lang of ['spanish', 'korean', 'japanese']) {
         const el = document.getElementById('lang-' + lang);
-        if (el && we[lang] === false) el.hidden = true;
+        if (!el) continue;
+        el.hidden = advanced || we[lang] === false;
       }
 
       if (s.transitUrl) {
@@ -96,6 +105,7 @@
     })();
   </script>
   <script src="weather.js"></script>
+  <script src="weather-advanced.js"></script>
   <script src="spanish-word.js"></script>
   <script src="korean-word.js"></script>
   <script src="japanese-word.js"></script>

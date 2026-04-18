@@ -21,7 +21,7 @@ app.use(express.static('public'));
 // Weather proxy with caching - fetches from Open-Meteo and caches for 15 minutes.
 // Client-side JS fetches from /api/weather instead of the external API,
 // so weather data loads instantly during screenshots.
-const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=61.5&longitude=23.8&current_weather=true&hourly=temperature_2m&forecast_days=1&timezone=Europe%2FHelsinki';
+const WEATHER_URL = 'https://api.open-meteo.com/v1/forecast?latitude=61.5&longitude=23.8&current=temperature_2m,weather_code,wind_speed_10m,is_day&hourly=temperature_2m,weather_code,precipitation,precipitation_probability,uv_index&daily=uv_index_max&forecast_days=2&timezone=Europe%2FHelsinki';
 let weatherCache = { data: null, timestamp: 0 };
 const WEATHER_CACHE_MS = 15 * 60 * 1000;
 
@@ -46,29 +46,69 @@ async function fetchWeatherData() {
     clearTimeout(timeout);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const raw = await response.json();
-    const cw = raw.current_weather;
+    const cw = raw.current || {};
+    const now = new Date();
 
-    // Extract 3-hourly temperatures for today (06, 09, 12, 15, 18, 21)
+    // Upcoming 3-hourly forecast: first future slot, then 6 entries at 3h spacing.
+    const times = raw.hourly?.time || [];
+    const firstFutureIdx = times.findIndex(t => new Date(t) >= now);
     const hourly = [];
-    if (raw.hourly && raw.hourly.time && raw.hourly.temperature_2m) {
-      const targetHours = [6, 9, 12, 15, 18, 21];
-      for (let i = 0; i < raw.hourly.time.length; i++) {
-        const hour = new Date(raw.hourly.time[i]).getHours();
-        if (targetHours.includes(hour)) {
-          hourly.push({ hour, temp: Math.round(raw.hourly.temperature_2m[i]) });
-        }
+    if (firstFutureIdx !== -1) {
+      for (let i = firstFutureIdx; i < times.length && hourly.length < 6; i += 3) {
+        const t = new Date(times[i]);
+        hourly.push({
+          time: times[i],
+          hour: t.getHours(),
+          temp: Math.round(raw.hourly.temperature_2m?.[i] ?? 0),
+          code: raw.hourly.weather_code?.[i] ?? 0,
+          precip: Math.round((raw.hourly.precipitation?.[i] ?? 0) * 10) / 10,
+          precipProb: Math.round(raw.hourly.precipitation_probability?.[i] ?? 0),
+          uv: Math.round((raw.hourly.uv_index?.[i] ?? 0) * 10) / 10
+        });
       }
     }
 
+    // Rain for the rest of today: group contiguous precip hours into events.
+    const todayKey = now.toISOString().slice(0, 10);
+    const events = [];
+    let cur = null;
+    for (let i = 0; i < times.length; i++) {
+      const t = new Date(times[i]);
+      if (t < now) continue;
+      if (t.toISOString().slice(0, 10) !== todayKey) break;
+      const mm = raw.hourly.precipitation?.[i] ?? 0;
+      if (mm > 0.1) {
+        if (!cur) cur = { startHour: t.getHours(), endHour: t.getHours() + 1, totalMm: mm };
+        else { cur.endHour = t.getHours() + 1; cur.totalMm += mm; }
+      } else if (cur) { events.push(cur); cur = null; }
+    }
+    if (cur) events.push(cur);
+    const rainToday = events.length ? {
+      totalMm: Math.round(events.reduce((a, e) => a + e.totalMm, 0) * 10) / 10,
+      events: events.map(e => ({ startHour: e.startHour, endHour: e.endHour }))
+    } : null;
+
+    // UV max today, only April-September and only if it exceeds the "low" threshold.
+    let uvMax = null;
+    const month = now.getMonth() + 1;
+    if (month >= 4 && month <= 9) {
+      const v = raw.daily?.uv_index_max?.[0];
+      if (typeof v === 'number' && v > 3) uvMax = Math.round(v * 10) / 10;
+    }
+
     const data = {
-      temp: Math.round(cw.temperature),
-      description: WMO_CODES[cw.weathercode] || 'Tuntematon',
-      windspeed: Math.round(cw.windspeed),
-      is_day: cw.is_day,
-      hourly
+      temp: Math.round(cw.temperature_2m ?? 0),
+      description: WMO_CODES[cw.weather_code] || 'Tuntematon',
+      weatherCode: cw.weather_code ?? 0,
+      windspeed: Math.round(cw.wind_speed_10m ?? 0),
+      is_day: cw.is_day === 1,
+      hourly,
+      rainToday,
+      uvMax,
+      date: todayKey
     };
     weatherCache = { data, timestamp: Date.now() };
-    console.log(`Weather updated: ${data.temp}°C, ${data.description}`);
+    console.log(`Weather updated: ${data.temp}°C, ${data.description}${rainToday ? `, rain ${rainToday.totalMm}mm` : ''}${uvMax ? `, UV ${uvMax}` : ''}`);
     return data;
   } catch (error) {
     console.error('Weather fetch failed:', error.message);
@@ -193,7 +233,9 @@ const DEFAULT_SETTINGS = {
   wordRotationMinutes: 10,
   photoOverride: null,
   wordsEnabled: { spanish: true, korean: true, japanese: true },
-  transitUrl: 'https://tremonitori.digitransit.fi/'
+  transitUrl: 'https://tremonitori.digitransit.fi/',
+  simpleWeatherEnabled: true,
+  advancedWeatherEnabled: false
 };
 
 function loadSettings() {
@@ -254,6 +296,12 @@ function validateSettings(partial, current) {
     } else if (v === null || v === '') {
       next.transitUrl = DEFAULT_SETTINGS.transitUrl;
     }
+  }
+  if (typeof partial.simpleWeatherEnabled === 'boolean') {
+    next.simpleWeatherEnabled = partial.simpleWeatherEnabled;
+  }
+  if (typeof partial.advancedWeatherEnabled === 'boolean') {
+    next.advancedWeatherEnabled = partial.advancedWeatherEnabled;
   }
   return next;
 }
