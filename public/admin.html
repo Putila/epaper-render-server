@@ -105,6 +105,12 @@
         </div>
         <div class="hint">Source is the secret iCal URL in the server's <code>.env</code> (<code>CALENDAR_ICAL_URL</code>).</div>
 
+        <label>Electricity spot price (Nord Pool FI)</label>
+        <div class="toggles">
+          <label class="toggle"><input type="checkbox" id="spotEnabled"> Show price strip</label>
+        </div>
+        <div class="hint">c/kWh incl. VAT: now, next 3 hours, today's and tomorrow's average. Tomorrow's prices appear after ~14:00.</div>
+
         <label for="boardPlacement">Home board (Telegram) placement</label>
         <select id="boardPlacement">
           <option value="off">Off</option>
@@ -202,6 +208,7 @@
       $('lunchStart').value = (settings.lunchHours && settings.lunchHours.start != null) ? settings.lunchHours.start : 6;
       $('lunchEnd').value = (settings.lunchHours && settings.lunchHours.end != null) ? settings.lunchHours.end : 11;
       $('calendarEnabled').checked = settings.calendarEnabled !== false;
+      $('spotEnabled').checked = settings.spotEnabled !== false;
       $('boardPlacement').value = settings.boardPlacement || 'off';
       const bs = settings.boardSections || {};
       $('boardMemos').checked = bs.memos !== false;
@@ -246,6 +253,7 @@
           end: parseInt($('lunchEnd').value, 10)
         },
         calendarEnabled: $('calendarEnabled').checked,
+        spotEnabled: $('spotEnabled').checked,
         boardPlacement: $('boardPlacement').value,
         boardSections: {
           memos: $('boardMemos').checked,

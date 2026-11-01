@@ -5,3 +5,4 @@ google-service-account.json
 *.log
 .env
 board.json
+spot-cache.json

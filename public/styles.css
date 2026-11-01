@@ -68,11 +68,24 @@ h1 {
   flex-shrink: 0;
 }
 
-.gym-card .gym-schedule {
-  transform: scale(0.5);
-  transform-origin: top left;
-  width: 300px;
+.gym-card .gym-list {
+  padding: 3px 4px;
+  color: #000;
+  font-variant-numeric: tabular-nums;
 }
+
+.gym-class {
+  font-size: 0.68rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gym-class .gc-time { font-weight: 700; }
+.gym-class.full { color: #ff0000; }
+.gym-class.cancelled { text-decoration: line-through; }
+
+.gym-empty { font-size: 0.7rem; color: #000; padding: 2px 0; }
 
 .gym-card h2 {
   margin: 0;
@@ -86,9 +99,10 @@ h1 {
   text-overflow: ellipsis;
 }
 
-.gym-card.card-city h2    { background: #FF4238; }
-.gym-card.card-park h2    { background: #002D72; }
-.gym-card.card-hervanta h2 { background: #C8BBAF; }
+/* Pure palette colours so headers don't dither on the 6-colour panel */
+.gym-card.card-city h2    { background: #ff0000; }
+.gym-card.card-park h2    { background: #0000ff; }
+.gym-card.card-hervanta h2 { background: #ffff00; color: #000; }
 
 .day-picker {
   display: none;

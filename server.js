@@ -413,6 +413,270 @@ app.get('/api/lunch', async (req, res) => {
 // Pre-fetch lunch on startup
 fetchLunchMenus();
 
+// --- Helsinki day boundaries ---
+// UTC offset (minutes) of Europe/Helsinki at a given instant, e.g. 120 or 180.
+function helsinkiOffsetMinutes(d) {
+  const tz = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Helsinki', timeZoneName: 'shortOffset' })
+    .formatToParts(d).find(p => p.type === 'timeZoneName').value;   // "GMT+2"
+  const m = /GMT([+-])(\d{1,2})(?::(\d{2}))?/.exec(tz);
+  return m ? (m[1] === '-' ? -1 : 1) * (parseInt(m[2], 10) * 60 + parseInt(m[3] || '0', 10)) : 0;
+}
+
+// Instant of 00:00 Helsinki time on dateKey (YYYY-MM-DD). DST switches happen
+// at 03:00/04:00 local, so the offset at UTC midnight is the one at local midnight.
+function helsinkiMidnight(dateKey) {
+  const utcMidnight = new Date(dateKey + 'T00:00:00.000Z');
+  return new Date(utcMidnight.getTime() - helsinkiOffsetMinutes(utcMidnight) * 60000);
+}
+
+function addDaysKey(dateKey, n) {
+  return tzDateKey(new Date(helsinkiMidnight(dateKey).getTime() + (n * 24 + 12) * 3600000));
+}
+
+function helsinkiHhmm(d) {
+  return d.toLocaleTimeString('fi-FI', { timeZone: 'Europe/Helsinki', hour: '2-digit', minute: '2-digit' });
+}
+
+// --- Gym group classes (GOGO, BRP "GoActive" booking) ---
+// Public, unauthenticated JSON API behind gogo.goactivebooking.com — the same
+// per-facility call the booking site makes. webCategory 2 = "Varaa tunti".
+// period.* must be exact toISOString() format or the API silently returns [].
+// Max range is 14 days; we fetch today + tomorrow.
+const GYM_API = 'https://gogo.brpsystems.com/brponline/api/ver3/businessunits';
+const GYM_WEB_CATEGORY = 2;
+const GYMS = [
+  { id: 'city', name: 'City', bu: 6 },
+  { id: 'park', name: 'Park', bu: 5 },
+  { id: 'hervanta', name: 'Hervanta', bu: 7 }
+];
+const GYM_CACHE_MS = 15 * 60 * 1000;
+let gymCache = { data: null, timestamp: 0, dateKey: null };
+
+// Room bookings and instructor-less video classes aren't real group classes.
+function isRealClass(c) {
+  return !/^SALI VARATTU/i.test(c.name || '') && !/VIRTUAALI/i.test(c.name || '');
+}
+
+async function fetchGymClasses() {
+  const todayKey = tzDateKey(new Date());
+  const start = helsinkiMidnight(todayKey).toISOString();
+  const end = helsinkiMidnight(addDaysKey(todayKey, 2)).toISOString();
+  const prev = gymCache.data && gymCache.dateKey === todayKey ? gymCache.data : null;
+
+  const gyms = await Promise.all(GYMS.map(async g => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+      const url = `${GYM_API}/${g.bu}/groupactivities?webCategory=${GYM_WEB_CATEGORY}` +
+        `&period.start=${encodeURIComponent(start)}&period.end=${encodeURIComponent(end)}`;
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      if (!Array.isArray(json)) throw new Error('unexpected response');
+      const classes = json.filter(isRealClass).map(c => ({
+        name: (c.name || '').replace(/™/g, '').trim(),
+        start: Date.parse(c.duration.start),
+        end: Date.parse(c.duration.end),
+        instructor: ((c.instructors || [])[0] || {}).name || '',
+        left: c.slots ? c.slots.leftToBook : null,
+        cancelled: !!c.cancelled,
+        note: c.externalMessage || ''
+      })).sort((a, b) => a.start - b.start);
+      return { ...g, classes };
+    } catch (e) {
+      console.error(`Gym fetch ${g.id} failed:`, e.message);
+      // Keep the previous good list for this gym rather than blanking it.
+      const old = prev && prev.find(x => x.id === g.id);
+      return { ...g, classes: old ? old.classes : [], error: !old };
+    }
+  }));
+  gymCache = { data: gyms, timestamp: Date.now(), dateKey: todayKey };
+  console.log(`Gym updated: ${gyms.map(g => `${g.name}=${g.classes.length}`).join(', ')}`);
+  return gyms;
+}
+
+// Today's remaining classes per gym; once all of today's are over, tomorrow's.
+function gymView(gyms) {
+  const now = Date.now();
+  const todayKey = tzDateKey(new Date());
+  const tomorrowStart = helsinkiMidnight(addDaysKey(todayKey, 1)).getTime();
+  const fmt = c => ({
+    time: helsinkiHhmm(new Date(c.start)), name: c.name, instructor: c.instructor,
+    left: c.left, full: c.left === 0, cancelled: c.cancelled, note: c.note
+  });
+  const today = gyms.map(g => g.classes.filter(c => c.end > now && c.start < tomorrowStart));
+  const showTomorrow = today.every(list => list.length === 0);
+  return {
+    day: showTomorrow ? 'tomorrow' : 'today',
+    gyms: gyms.map((g, i) => ({
+      id: g.id, name: g.name, error: !!g.error,
+      classes: (showTomorrow ? g.classes.filter(c => c.start >= tomorrowStart) : today[i]).map(fmt)
+    }))
+  };
+}
+
+app.get('/api/gym', async (req, res) => {
+  const stale = !gymCache.data
+    || Date.now() - gymCache.timestamp > GYM_CACHE_MS
+    || gymCache.dateKey !== tzDateKey(new Date());
+  if (stale) await fetchGymClasses();
+  res.set('Cache-Control', 'no-store');
+  if (gymCache.data) res.json(gymView(gymCache.data));
+  else res.status(503).json({ error: 'Gym schedule unavailable' });
+});
+
+// Pre-fetch gym classes on startup
+fetchGymClasses();
+
+// --- Electricity spot price (Nord Pool day-ahead, FI) ---
+// Prices are 15-min slots stored as c/kWh incl. VAT in a merged map
+// (UTC start ms -> cents), persisted to spot-cache.json so restarts don't
+// refetch. Day-ahead prices change once a day, so instead of polling we only
+// fetch when something is missing: today (cold start) or tomorrow (published
+// ~14:00 Helsinki). That's a handful of requests a day.
+//   primary:  spot-hinta.fi — Finnish-day aligned, so today is always complete
+//   fallback: porssisahko.net — rolling 2 Nord Pool days (drops today 00-01
+//             after 14:00, hence merging rather than replacing)
+const SPOT_PRIMARY_URL = 'https://api.spot-hinta.fi/TodayAndDayForward';
+const SPOT_FALLBACK_URL = 'https://api.porssisahko.net/v2/latest-prices.json';
+const SPOT_CACHE_FILE = path.join(__dirname, 'spot-cache.json');
+const SPOT_VAT = 1.255;                       // Finnish VAT 25.5 %, 0 % on negative prices
+const SPOT_SLOT_MS = 15 * 60 * 1000;
+const SPOT_PUBLISH_HOUR = 14;
+const spot = { prices: new Map(), lastFetchAt: 0, lastSource: null, failures: 0, inflight: null };
+
+(function loadSpotCache() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(SPOT_CACHE_FILE, 'utf8'));
+    for (const [t, c] of raw.prices || []) spot.prices.set(t, c);
+  } catch (e) { /* no cache yet */ }
+})();
+
+function saveSpotCache() {
+  try { fs.writeFileSync(SPOT_CACHE_FILE, JSON.stringify({ prices: [...spot.prices] })); }
+  catch (e) { console.error('Spot cache write failed:', e.message); }
+}
+
+const centsWithVat = c => Math.round((c > 0 ? c * SPOT_VAT : c) * 1000) / 1000;
+
+async function fetchJson(url) {
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'epaper-dashboard/1.0' },
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchSpotPrimary() {
+  const rows = await fetchJson(SPOT_PRIMARY_URL);        // [{DateTime, PriceNoTax (EUR/kWh)}]
+  if (!Array.isArray(rows) || !rows.length) throw new Error('empty response');
+  for (const r of rows) spot.prices.set(Date.parse(r.DateTime), centsWithVat(r.PriceNoTax * 100));
+}
+
+async function fetchSpotFallback() {
+  const json = await fetchJson(SPOT_FALLBACK_URL);       // {prices:[{price (c/kWh incl. VAT), startDate}]}
+  if (!json || !Array.isArray(json.prices) || !json.prices.length) throw new Error('empty response');
+  for (const p of json.prices) spot.prices.set(Date.parse(p.startDate), p.price);
+}
+
+function spotDaySlots(dateKey) {
+  const from = helsinkiMidnight(dateKey).getTime();
+  const to = helsinkiMidnight(addDaysKey(dateKey, 1)).getTime();
+  return [...spot.prices].filter(([t]) => t >= from && t < to);
+}
+
+// Complete = first and last quarter of the Helsinki day are present
+// (DST days have 92/100 quarters, so don't count to 96).
+function spotDayComplete(dateKey) {
+  const from = helsinkiMidnight(dateKey).getTime();
+  const to = helsinkiMidnight(addDaysKey(dateKey, 1)).getTime();
+  return spot.prices.has(from) && spot.prices.has(to - SPOT_SLOT_MS);
+}
+
+function spotNeedsFetch() {
+  const now = new Date();
+  const todayKey = tzDateKey(now);
+  const hour = parseInt(now.toLocaleString('en-GB', { timeZone: 'Europe/Helsinki', hour: '2-digit', hour12: false }), 10);
+  const missing = !spotDayComplete(todayKey) ||
+    (hour >= SPOT_PUBLISH_HOUR && !spotDayComplete(addDaysKey(todayKey, 1)));
+  if (!missing) return false;
+  // Retry spacing: 10 min while waiting for publication, 30 min after 16:00
+  // (delayed auction), doubling on errors up to 30 min.
+  const base = hour >= 16 ? 30 : 10;
+  const wait = Math.min(30, base * 2 ** Math.min(spot.failures, 2)) * 60 * 1000;
+  return Date.now() - spot.lastFetchAt >= wait;
+}
+
+// Concurrent callers (startup, timer, a request) share one in-flight fetch.
+function refreshSpotPrices() {
+  if (spot.inflight) return spot.inflight;
+  if (!spotNeedsFetch()) return Promise.resolve();
+  spot.inflight = doRefreshSpotPrices().finally(() => { spot.inflight = null; });
+  return spot.inflight;
+}
+
+async function doRefreshSpotPrices() {
+  spot.lastFetchAt = Date.now();
+  for (const [name, fn] of [['spot-hinta', fetchSpotPrimary], ['porssisahko', fetchSpotFallback]]) {
+    try {
+      await fn();
+      spot.lastSource = name;
+      spot.failures = 0;
+      // Keep yesterday onwards only.
+      const cutoff = helsinkiMidnight(addDaysKey(tzDateKey(new Date()), -1)).getTime();
+      for (const t of spot.prices.keys()) if (t < cutoff) spot.prices.delete(t);
+      saveSpotCache();
+      const tomorrow = spotDayComplete(addDaysKey(tzDateKey(new Date()), 1));
+      console.log(`Spot prices updated from ${name}: ${spot.prices.size} slots${tomorrow ? ', tomorrow complete' : ''}`);
+      return;
+    } catch (e) {
+      console.error(`Spot fetch (${name}) failed:`, e.message);
+    }
+  }
+  spot.failures++;
+}
+
+const spotAvg = slots => slots.length
+  ? Math.round(slots.reduce((s, [, c]) => s + c, 0) / slots.length * 100) / 100
+  : null;
+
+function spotView() {
+  const now = Date.now();
+  const todayKey = tzDateKey(new Date(now));
+  const tomorrowKey = addDaysKey(todayKey, 1);
+  const slotStart = Math.floor(now / SPOT_SLOT_MS) * SPOT_SLOT_MS;
+  // Helsinki is a whole-hour offset from UTC, so UTC hour boundaries are local ones.
+  const nextHour = Math.floor(now / 3600000) * 3600000 + 3600000;
+  const next = [0, 1, 2].map(i => {
+    const h = nextHour + i * 3600000;
+    const quarters = [0, 1, 2, 3].map(q => h + q * SPOT_SLOT_MS).filter(t => spot.prices.has(t)).map(t => [t, spot.prices.get(t)]);
+    return { hour: parseInt(helsinkiHhmm(new Date(h)), 10), price: quarters.length === 4 ? spotAvg(quarters) : null };
+  });
+  const current = spot.prices.has(slotStart) ? spot.prices.get(slotStart) : null;
+  return {
+    unit: 'c/kWh incl. VAT',
+    current: { price: current == null ? null : Math.round(current * 100) / 100, start: new Date(slotStart).toISOString() },
+    next,
+    todayAvg: spotDayComplete(todayKey) ? spotAvg(spotDaySlots(todayKey)) : null,
+    tomorrowAvg: spotDayComplete(tomorrowKey) ? spotAvg(spotDaySlots(tomorrowKey)) : null,
+    source: spot.lastSource,
+    fetchedAt: spot.lastFetchAt ? new Date(spot.lastFetchAt).toISOString() : null
+  };
+}
+
+app.get('/api/spot', async (req, res) => {
+  await refreshSpotPrices();
+  res.set('Cache-Control', 'no-store');
+  if (spot.prices.size) res.json(spotView());
+  else res.status(503).json({ error: 'Spot prices unavailable' });
+});
+
+// Fetch on startup if needed, then check every 10 min (no-op when complete).
+refreshSpotPrices();
+setInterval(refreshSpotPrices, 10 * 60 * 1000);
+
 // --- Pi ping check ---
 // Probes the configured Pi host with ICMP ping (single packet, short timeout).
 // Used by the admin page to distinguish "Pi is down" from "render server is down".
@@ -550,12 +814,13 @@ const DEFAULT_SETTINGS = {
   wordRotationMinutes: 10,
   photoOverride: null,
   wordsEnabled: { spanish: true, korean: true, japanese: true },
-  transitUrl: 'https://tremonitori.digitransit.fi/',
+  transitUrl: 'https://tremonitori.digitransit.fi/view?cont=rWJF+PeupWrwKiWww6pqzA==',  // Rimmi (bus stop 3641)
   simpleWeatherEnabled: true,
   advancedWeatherEnabled: false,
   lunchEnabled: true,
   lunchHours: { start: 6, end: 11 },
   calendarEnabled: true,
+  spotEnabled: true,
   boardPlacement: 'off',                                   // off | strip | replace | alternate
   boardSections: { memos: true, dinner: true, shopping: true },
   boardTopics: { memos: '', meals: '', shopping: '' },     // Telegram forum-topic ids
@@ -637,6 +902,9 @@ function validateSettings(partial, current) {
   }
   if (typeof partial.calendarEnabled === 'boolean') {
     next.calendarEnabled = partial.calendarEnabled;
+  }
+  if (typeof partial.spotEnabled === 'boolean') {
+    next.spotEnabled = partial.spotEnabled;
   }
   if (['off', 'strip', 'replace', 'alternate'].includes(partial.boardPlacement)) {
     next.boardPlacement = partial.boardPlacement;

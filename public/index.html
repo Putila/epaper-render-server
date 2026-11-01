@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="gym-schedule.css">
 </head>
 <body>
   <div class="iframe-container">
@@ -15,23 +14,23 @@
 
   <div class="gym-container">
     <div class="schedule-container">
-      <div class="gym-card card-city">
+      <div class="gym-card card-city" data-gym="city">
         <h2>City</h2>
-        <div class="gym-schedule gym-city" id="sched-city"></div>
+        <div class="gym-list"></div>
       </div>
 
-      <div class="gym-card card-park">
+      <div class="gym-card card-park" data-gym="park">
         <h2>Park</h2>
-        <div class="gym-schedule gym-park" id="sched-park"></div>
+        <div class="gym-list"></div>
       </div>
 
-      <div class="gym-card card-hervanta">
+      <div class="gym-card card-hervanta" data-gym="hervanta">
         <h2>Hervanta</h2>
-        <div class="gym-schedule gym-hervanta" id="sched-hervanta"></div>
+        <div class="gym-list"></div>
       </div>
     </div>
   </div>
 
-  <script src="gym-schedule.js"></script>
+  <script src="gym.js"></script>
 </body>
 </html>

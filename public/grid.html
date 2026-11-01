@@ -6,7 +6,6 @@
   <title>Grid Dashboard</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="grid.css">
-  <link rel="stylesheet" href="gym-schedule.css">
   <script src="/api/settings.js"></script>
 </head>
 <body>
@@ -65,23 +64,26 @@
         </div>
         <div id="right-gym" class="right-slot" hidden>
           <div class="schedule-container">
-            <div class="gym-card card-city">
+            <div class="gym-card card-city" data-gym="city">
               <h2>City</h2>
-              <div class="gym-schedule gym-city" id="sched-city"></div>
+              <div class="gym-list"></div>
             </div>
-            <div class="gym-card card-park">
+            <div class="gym-card card-park" data-gym="park">
               <h2>Park</h2>
-              <div class="gym-schedule gym-park" id="sched-park"></div>
+              <div class="gym-list"></div>
             </div>
-            <div class="gym-card card-hervanta">
+            <div class="gym-card card-hervanta" data-gym="hervanta">
               <h2>Hervanta</h2>
-              <div class="gym-schedule gym-hervanta" id="sched-hervanta"></div>
+              <div class="gym-list"></div>
             </div>
           </div>
         </div>
       </div>
       <div id="right-board" class="right-board" hidden>
         <div id="board-widget" class="board-widget"></div>
+      </div>
+      <div id="right-spot" class="spot-slot" hidden>
+        <div id="spot-widget" class="spot-widget"></div>
       </div>
     </div>
   </div>
@@ -126,6 +128,9 @@
       const calEl = document.getElementById('calendar-widget');
       if (calEl) calEl.hidden = s.calendarEnabled === false;
 
+      // Electricity spot price strip: shown whenever enabled.
+      document.getElementById('right-spot').hidden = s.spotEnabled === false;
+
       if (s.transitUrl) {
         const iframe = document.getElementById('transit-iframe');
         if (iframe) iframe.src = s.transitUrl;
@@ -137,9 +142,10 @@
   <script src="spanish-word.js"></script>
   <script src="korean-word.js"></script>
   <script src="japanese-word.js"></script>
-  <script src="gym-schedule.js"></script>
+  <script src="gym.js"></script>
   <script src="lunch.js"></script>
   <script src="calendar.js"></script>
   <script src="board.js"></script>
+  <script src="spot.js"></script>
 </body>
 </html>
