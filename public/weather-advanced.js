@@ -76,6 +76,13 @@
       extras.push(`<div class="wa-alert wa-uv">${ICON.sun}<span>UV <strong>${data.uvMax}</strong> · ${UV_LABEL(data.uvMax)}</span></div>`);
     }
 
+    // Sun times live near the top (always visible), not in the clippable extras.
+    const sunLine = (data.sunrise && data.sunset)
+      ? `<div class="wa-sun-line">↑ ${data.sunrise} &nbsp; ↓ ${data.sunset}${
+          data.daylightMinutes != null ? ` &nbsp; ${Math.floor(data.daylightMinutes / 60)} h ${data.daylightMinutes % 60} min` : ''
+        }</div>`
+      : '';
+
     root.innerHTML = `
       <div class="wa-header">
         <span class="wa-location">Tampere</span>
@@ -85,7 +92,8 @@
         <div class="wa-icon-big">${iconFor(data.weatherCode)}</div>
         <div class="wa-current-text">
           <div class="wa-temp">${data.temp}°</div>
-          <div class="wa-desc">${data.description}</div>
+          <div class="wa-desc">${data.description}${(data.feelsLike != null && data.feelsLike !== data.temp) ? ` · tuntuu ${data.feelsLike}°` : ''}</div>
+          ${sunLine}
         </div>
       </div>
       <div class="wa-hourly">${hourlyHtml}</div>

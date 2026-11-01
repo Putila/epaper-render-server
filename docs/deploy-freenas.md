@@ -112,58 +112,55 @@ node server.js
 | `PORTRAIT_DELAY` | `10000` | Delay (ms) before portrait screenshot |
 | `GRID_DELAY` | `15000` | Delay (ms) before grid screenshot |
 
-### Auto-start Service
+### Auto-start & Supervision
 
-Create `/usr/local/etc/rc.d/epaper` inside the jail:
+The server is started at boot by an `rc.d` service and kept alive by a
+cron-driven watchdog. Two pieces are needed because **`daemon(8)`'s built-in
+supervision (`daemon -r`) does not work in this jail** — it fails to keep even
+`sleep` alive (a process-descriptor restriction in the jail). Cron, however,
+works fine, so supervision is done with a periodic health check instead.
 
-```sh
-#!/bin/sh
+Why a health check rather than a simple "is the pid alive?" test: it also
+recovers a **hung** node (port open but not responding), not just a crashed
+one. Before every (re)start it clears the stale Firefox profile lock and reaps
+orphaned Firefox processes — the usual cause of a wedged screenshot pipeline
+and the most likely reason the server used to "break a few times a month and
+stay down".
 
-# PROVIDE: epaper
-# REQUIRE: NETWORKING
-# KEYWORD: shutdown
+The three deploy files live in `deploy/`:
 
-. /etc/rc.subr
+| File | Installs to | Purpose |
+|---|---|---|
+| `epaper-watchdog.sh` | `/app/epaper-watchdog.sh` | start/stop/status/check logic (the brain) |
+| `epaper.rc` | `/usr/local/etc/rc.d/epaper` | boot start + `service epaper …` control |
+| `epaper.cron` | root crontab | runs `epaper-watchdog.sh check` every 2 min |
 
-name=epaper
-rcvar=epaper_enable
-
-pidfile="/var/run/${name}.pid"
-logfile="/var/log/${name}.log"
-
-start_cmd="epaper_start"
-stop_cmd="epaper_stop"
-
-epaper_start() {
-  echo "Starting ${name}"
-  cd /app
-  /usr/local/bin/node /app/server.js >> ${logfile} 2>&1 &
-  echo $! > ${pidfile}
-}
-
-epaper_stop() {
-  if [ -f ${pidfile} ]; then
-    echo "Stopping ${name}"
-    kill $(cat ${pidfile}) 2>/dev/null
-    rm -f ${pidfile}
-  fi
-}
-
-load_rc_config $name
-run_rc_command "$1"
-```
-
-Enable and manage:
+Install (from the TrueNAS host shell):
 
 ```bash
-chmod +x /usr/local/etc/rc.d/epaper
-sysrc epaper_enable=YES
-service epaper start    # start the server
-service epaper stop     # stop the server
-service epaper restart  # restart the server
+JAIL=/mnt/<pool>/iocage/jails/render-server/root
+cp deploy/epaper-watchdog.sh  $JAIL/app/epaper-watchdog.sh
+cp deploy/epaper.rc           $JAIL/usr/local/etc/rc.d/epaper
+cp deploy/epaper.cron         $JAIL/tmp/epaper.cron
+
+iocage exec render-server 'chmod +x /app/epaper-watchdog.sh /usr/local/etc/rc.d/epaper'
+iocage exec render-server 'sysrc epaper_enable=YES'
+iocage exec render-server 'crontab /tmp/epaper.cron'
+iocage exec render-server 'service epaper start'
 ```
 
-Logs are written to `/var/log/epaper.log`.
+Manage and inspect:
+
+```bash
+service epaper start|stop|restart|status   # status uses the HTTP health check
+```
+
+- Server log: `/var/log/epaper.log`
+- Watchdog log: `/var/log/epaper-watchdog.log` (records every restart)
+- Health probe: `curl http://<jail-ip>:3000/healthz` → `ok`
+
+`service epaper stop` also pauses the watchdog (via `/var/run/epaper.paused`)
+so cron won't immediately restart it; `service epaper start` resumes it.
 
 ## Endpoints
 

@@ -49,6 +49,7 @@ html, body {
   /* background:rgb(255 255 255); */
   color: #ffffff;
   gap: 2px;
+  overflow: hidden;
 }
 
 /* Weather Widget */
@@ -109,6 +110,7 @@ html, body {
   flex-direction: column;
   gap: 4px;
   min-height: 0;
+  overflow: hidden;
   font-variant-numeric: tabular-nums;
 }
 
@@ -130,11 +132,18 @@ html, body {
   gap: 8px;
 }
 
-.wa-icon-big { width: 56px; height: 56px; flex-shrink: 0; }
+.wa-icon-big { width: 46px; height: 46px; flex-shrink: 0; }
 
 .wa-current-text { display: flex; flex-direction: column; line-height: 1; }
-.wa-temp { font-size: 2.2rem; font-weight: 700; }
-.wa-desc { font-size: 0.85rem; margin-top: 2px; }
+.wa-temp { font-size: 2rem; font-weight: 700; }
+.wa-desc { font-size: 0.8rem; margin-top: 2px; }
+.wa-sun-line {
+  font-size: 0.75rem;
+  color: #ffb300;
+  font-weight: 600;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
 
 .wa-hourly {
   display: grid;
@@ -238,21 +247,202 @@ html, body {
   font-weight: normal;
 }
 
-/* Right side: Photo or gym schedule (swapped by time of day) */
+/* Calendar widget (bottom-left) — fixed budget so it never overlaps weather */
+.calendar-widget {
+  flex: 0 0 auto;
+  max-height: 84px;
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  border-radius: 4px;
+  padding: 2px 4px;
+  overflow: hidden;
+}
+
+.calendar-widget[hidden] { display: none; }
+
+.calendar-widget .cal-header {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #ffb300;
+  line-height: 1.2;
+  margin-bottom: 1px;
+}
+
+.calendar-widget .cal-events {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.calendar-widget .calendar-event {
+  display: flex;
+  gap: 5px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.calendar-widget .cal-when {
+  color: #ffb300;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.calendar-widget .cal-title {
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-widget .calendar-empty {
+  font-size: 0.7rem;
+  color: #aaa;
+}
+
+/* Telegram home board (right column: strip under photo, or full column) */
+.right-board { background: #000; color: #fff; overflow: hidden; }
+.right-board[hidden] { display: none; }
+.right-board.board-strip { flex: 0 0 auto; max-height: 160px; border-top: 2px solid #222; }
+.right-board.board-full { flex: 1 1 auto; min-height: 0; }
+
+.board-widget {
+  height: 100%;
+  overflow: hidden;
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.board-widget .board-label {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #ffb300;
+  font-weight: 700;
+}
+
+.board-widget .board-dinner {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.board-widget .dinner-text { font-size: 1.05rem; font-weight: 700; }
+
+.board-widget .shop-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 2px;
+}
+.board-widget .shop-item {
+  font-size: 0.82rem;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0 5px;
+  line-height: 1.35;
+}
+.board-widget .shop-item.done {
+  color: #777;
+  border-color: #333;
+  text-decoration: line-through;
+}
+
+.board-widget .board-memos { min-height: 0; overflow: hidden; }
+.board-widget .memo-item {
+  font-size: 0.85rem;
+  line-height: 1.25;
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.board-widget .memo-item .memo-from { color: #ffb300; font-size: 0.7rem; margin-left: 6px; }
+
+/* Right side: optional lunch on top, photo or gym schedule below */
 .grid-right {
   grid-row: 1 / 3;
   grid-column: 2;
   background: #000;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
+
+.grid-right .lunch-slot {
+  flex: 0 0 auto;
+  max-height: 220px;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+  border-bottom: 1px solid #222;
+}
+
+.grid-right .lunch-slot[hidden] { display: none; }
+
+.grid-right .right-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.grid-right .right-stack[hidden] { display: none; }
 
 .grid-right .right-slot {
   width: 100%;
   height: 100%;
 }
 
-.grid-right .right-slot[hidden] { display: none; }
+/* !important because the #right-gym rule below is an ID selector and would
+   otherwise out-specify this and keep the gym visible when hidden. */
+.grid-right .right-slot[hidden] { display: none !important; }
+
+/* Lunch widget: two restaurants side by side */
+.lunch-widget {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px 6px;
+  font-size: 0.7rem;
+  line-height: 1.15;
+}
+
+.lunch-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.lunch-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffb300;
+  margin-bottom: 2px;
+  letter-spacing: 0.3px;
+}
+
+.lunch-item {
+  font-size: 0.7rem;
+  color: #fff;
+  margin-bottom: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lunch-empty,
+.lunch-error {
+  font-size: 0.7rem;
+  color: #aaa;
+}
 
 .grid-right #right-photo img {
   width: 100%;

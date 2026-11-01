@@ -3,3 +3,5 @@ photos/
 settings.json
 google-service-account.json
 *.log
+.env
+board.json

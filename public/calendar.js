@@ -1,37 +1,40 @@
-// Google Calendar widget - fetches events from server proxy
+// Calendar widget — renders upcoming events from the server proxy (/api/calendar).
+// The server already formats day/time labels in Europe/Helsinki, so this just lays
+// them out. Renders into #calendarEvents only if that container exists.
 
 async function fetchCalendar() {
+  const container = document.getElementById('calendarEvents');
+  if (!container) return;
   try {
     const response = await fetch('/api/calendar');
     if (!response.ok) throw new Error('Calendar fetch failed');
     const data = await response.json();
 
-    const container = document.getElementById('calendarEvents');
-    if (!container) return;
-
     if (!data.events || data.events.length === 0) {
-      container.textContent = 'Ei tapahtumia';
+      container.innerHTML = '<div class="calendar-empty">Ei tulevia tapahtumia</div>';
       return;
     }
 
     container.innerHTML = '';
     data.events.forEach(ev => {
-      const div = document.createElement('div');
-      div.className = 'calendar-event';
+      const row = document.createElement('div');
+      row.className = 'calendar-event';
 
-      let timeStr = '';
-      if (!ev.allDay) {
-        const start = new Date(ev.start);
-        timeStr = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')} `;
-      }
+      const when = document.createElement('span');
+      when.className = 'cal-when';
+      when.textContent = ev.time ? `${ev.day} ${ev.time}` : ev.day;
 
-      div.textContent = timeStr + ev.summary;
-      container.appendChild(div);
+      const title = document.createElement('span');
+      title.className = 'cal-title';
+      title.textContent = ev.summary;
+
+      row.appendChild(when);
+      row.appendChild(title);
+      container.appendChild(row);
     });
   } catch (error) {
     console.error('Calendar error:', error);
-    const container = document.getElementById('calendarEvents');
-    if (container) container.textContent = 'Kalenteri ei saatavilla';
+    container.innerHTML = '<div class="calendar-empty">Kalenteri ei saatavilla</div>';
   }
 }
 

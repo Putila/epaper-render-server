@@ -28,13 +28,16 @@ async function fetchWeather() {
     }
 
     if (descElement) {
-      descElement.textContent = `${data.description}, ${data.windspeed} km/h`;
+      const feels = (data.feelsLike != null && data.feelsLike !== data.temp) ? `, tuntuu ${data.feelsLike}°` : '';
+      descElement.textContent = `${data.description}, ${data.windspeed} km/h${feels}`;
     }
 
     if (forecastElement && data.hourly && data.hourly.length > 0) {
-      forecastElement.textContent = data.hourly
+      const hours = data.hourly
         .map(h => `${String(h.hour).padStart(2, '0')}:${h.temp}°`)
         .join('  ');
+      const sun = (data.sunrise && data.sunset) ? `   ↑${data.sunrise} ↓${data.sunset}` : '';
+      forecastElement.textContent = hours + sun;
     }
 
   } catch (error) {

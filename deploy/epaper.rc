@@ -1,0 +1,45 @@
+#!/bin/sh
+#
+# PROVIDE: epaper
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+#
+# rc.d service for the e-paper render server.
+#
+# NOTE: this only starts/stops node — it does NOT supervise it. Supervision is
+# done by epaper-watchdog.sh via cron, because daemon(8)'s built-in supervision
+# does not work in this jail. Both delegate to the same watchdog script so the
+# start/stop/health logic lives in one place.
+#
+# Install (inside the jail):
+#   cp epaper.rc /usr/local/etc/rc.d/epaper
+#   chmod +x /usr/local/etc/rc.d/epaper
+#   sysrc epaper_enable=YES
+#   service epaper start
+#
+# Manage:  service epaper {start|stop|restart|status}
+# Logs:    /var/log/epaper.log  (server)  /var/log/epaper-watchdog.log  (watchdog)
+
+. /etc/rc.subr
+
+name=epaper
+rcvar=epaper_enable
+watchdog=/app/epaper-watchdog.sh
+
+load_rc_config $name
+: ${epaper_enable:="NO"}
+
+start_cmd="${watchdog} start"
+stop_cmd="${watchdog} stop"
+status_cmd="${watchdog} status"
+restart_cmd="epaper_restart"
+extra_commands="status"
+
+epaper_restart()
+{
+	${watchdog} stop
+	sleep 2
+	${watchdog} start
+}
+
+run_rc_command "$1"

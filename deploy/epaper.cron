@@ -1,0 +1,4 @@
+# E-paper render server supervision (installed via: crontab epaper.cron)
+# Every 2 minutes: health-check node and restart it if crashed or hung.
+# lockf -st 0 ensures runs never pile up if one restart takes a while.
+*/2 * * * * /usr/bin/lockf -st 0 /var/run/epaper-watchdog.lock /app/epaper-watchdog.sh check >/dev/null 2>&1
